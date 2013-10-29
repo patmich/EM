@@ -1,4 +1,4 @@
 <EMSettings>
 	<FlexSDKSource>http://download.macromedia.com/pub/flex/sdk/flex_sdk_4.6.zip</FlexSDKSource>
-	<FlexSDK>Tools/</FlexSDK>
+	<FlexSDK>Tools/flex_sdk_4.6</FlexSDK>
 </EMSettings>

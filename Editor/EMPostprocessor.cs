@@ -29,7 +29,7 @@ namespace LLT
 			
 			foreach(var swf in importedAssets.Where(x=>Path.GetExtension(x) == ".swf"))
 			{
-				var import = EMSwfImporter.Import(swf, Path.GetDirectoryName(Path.GetDirectoryName(swf)) + "/EM/", "Temp/", "/Users/patricemichaud/flex_sdk_4.6/bin/adl");
+				var import = EMSwfImporter.Import(swf, Path.GetDirectoryName(Path.GetDirectoryName(swf)) + "/EM/", "Temp/", EMSettings.Instance.FlexSDK + "/bin/adl");
 				while(import.MoveNext());
 			}
 		}

@@ -228,7 +228,7 @@ namespace LLT
 			var padding = 5;
 			
 	        ProcessStartInfo processStartInfo = new ProcessStartInfo();
-	        processStartInfo.WorkingDirectory = Path.GetFullPath("../Rasterizer/bin-debug/");
+	        processStartInfo.WorkingDirectory = Path.GetFullPath("Tools/Rasterizer/bin-debug/");
 	        processStartInfo.FileName = _adl;
 			processStartInfo.RedirectStandardError = true;
 			processStartInfo.RedirectStandardOutput = true;
