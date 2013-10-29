@@ -15,6 +15,15 @@ namespace LLT
 	{
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
+			if(importedAssets.FirstOrDefault(x=>Path.GetExtension(x) == ".swf") != string.Empty)
+			{
+				var dependencyCheck = EMSettings.Instance.DependencyCheck();
+				if(dependencyCheck.MoveNext())
+				{
+					return;
+				}
+			}
+			
 			CoreTexture2D.PngDecoder = PngDecode;
 			CoreTexture2D.PngEncoder = PngEncode;
 			

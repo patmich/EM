@@ -16,6 +16,14 @@ namespace LLT
 		private ITSTreeStream _tree;
 		private TSTreeStreamTag _tag;
 		
+		public EMAnimationHead AnimationHead
+		{
+			get
+			{
+				return _animationHead;
+			}
+		}
+		
 		public int Position 
 		{
 			get 

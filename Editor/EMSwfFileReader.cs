@@ -23,6 +23,7 @@ namespace LLT
 	        new KeyValuePair<uint, Type>(32, typeof(EMSwfDefineShape)),
 			new KeyValuePair<uint, Type>(36, typeof(EMSwfDefineBitsLossless2)),
 	        new KeyValuePair<uint, Type>(39, typeof(EMSwfDefineSprite)),
+			new KeyValuePair<uint, Type>(43, typeof(EMSwfFrameLabel)),
 	        new KeyValuePair<uint, Type>(69, typeof(EMSwfFileAttributes)),
 	        new KeyValuePair<uint, Type>(76, typeof(EMSwfSymbolClass)),
 	        new KeyValuePair<uint, Type>(83, typeof(EMSwfDefineShape)),

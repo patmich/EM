@@ -10,6 +10,11 @@ namespace LLT
 				return _label;
 			}
 		}
+		
+		public EMSwfFrameLabel()
+	    {
+	    }
+		
 	    public EMSwfFrameLabel(string label)
 	    {
 	        _tag = new EMSwfTag(43, (ushort)(label.Length + 1));

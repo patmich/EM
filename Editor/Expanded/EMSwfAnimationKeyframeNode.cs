@@ -23,7 +23,6 @@ namespace LLT
 			get 
 			{
 				var childs = new List<ITSTreeNode>();
-				
 				for(var curveIndex = 0; curveIndex < _curves.Count; curveIndex++)
 				{
 					var curve = _curves[curveIndex];
@@ -60,7 +59,7 @@ namespace LLT
 		public byte[] ToBytes ()
 		{
 			var EMAnimationKeyframe = new EMAnimationKeyframeStructLayout();
-			EMAnimationKeyframe.Time = Index / _frameRate;
+			EMAnimationKeyframe.Time = (Index - _startIndex) / _frameRate;
 			
 			var bytes = new byte[SizeOf];
 			var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);

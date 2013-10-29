@@ -104,7 +104,6 @@ namespace LLT
 				using (var tree = new EMDisplayTreeStream())
 	            {
 					var positions = tree.InitFromTree(new EMSwfDefineSpriteNode(root.Key, EMSwfMatrix.Identity, 0, defineSprite), null, new EMFactory());
-					tree.WriteAllBytes(_destinationFolder + root.Key + ".bytes");
 					
 					UnityEditor.AssetDatabase.ImportAsset(_destinationFolder + root.Key + ".bytes");
 					UnityEditor.AssetDatabase.ImportAsset(_destinationFolder + "atlas.png");
@@ -122,14 +121,14 @@ namespace LLT
 					field.SetValue(rootComponent, atlas);
 			
 					field = typeof(EMRoot).GetField("_tree",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-					var rootTree = field.GetValue(rootComponent) as EMDisplayTreeStream;
+					field.SetValue(rootComponent, tree);
 					
 					for(var i = 0; i < positions.Count; i++)
 					{
 						var spriteNode = positions[i].Key as EMSwfDefineSpriteNode;
 						if(spriteNode != null)
 						{
-							var obj = rootTree.GetObject(positions[i].Value);
+							var obj = tree.GetObject(positions[i].Value);
 							
 							var animTextAsset = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + spriteNode.Id + ".anim.bytes");
 							var animationHead = go.AddComponent<EMAnimationHead>();
@@ -141,6 +140,8 @@ namespace LLT
 							field.SetValue(obj, animationHead);
 						}
 					}
+					
+					tree.WriteAllBytes(_destinationFolder + root.Key + ".bytes");
 				}	
 	
 				UnityEditor.PrefabUtility.CreatePrefab(_destinationFolder + root.Key + ".prefab", go);

@@ -66,6 +66,18 @@ namespace LLT
 #endif
 		}
 		
+		public void GotoAndPlay(string label)
+		{
+			
+			var tag = _animationTree.FindTag(label);
+			_animationClip.Position = tag.EntryPosition;
+			
+			_keyframesEnumerator.Init(tag);
+			enabled = _keyframesEnumerator.MoveNext();
+			
+			_time = 0f;
+		}
+		
 		private void Update()
 		{
 			if(_animationClip == null)
@@ -95,7 +107,7 @@ namespace LLT
 					while(_keyframeValuesEnumerator.MoveNext())
 					{
 						EMAnimationKeyframeValueStructLayout keyframeValue = *(EMAnimationKeyframeValueStructLayout*)((byte*)ptr.ToPointer() + _keyframeValuesEnumerator.Current.EntryPosition);
-						
+					
 						CoreAssert.Fatal(0 <= keyframeValue.ChildIndex && keyframeValue.ChildIndex < _positions.Count);
 						
 						_entry.Position = _positions[keyframeValue.ChildIndex];

@@ -50,6 +50,7 @@ namespace LLT
 				for(;i < _sprite.ControlTags.Count; i++)
 				{
 					var controlTag = _sprite.ControlTags[i];
+					
 					if(controlTag is EMSwfFrameLabel)
 					{
 						_childs.Add(new EMSwfAnimationClipNode(_frameRate, label, startIndex, _sprite.ControlTags.GetRange(start, i - start), curves));

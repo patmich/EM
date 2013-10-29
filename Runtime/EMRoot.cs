@@ -121,7 +121,15 @@ namespace LLT
 		private readonly Material[] _sharedMaterials = new Material[(int)ShaderType.Count * 2];
 		
 		private TSTreeStreamSiblingEnumerator _siblingEnumerator;
-
+	
+		public ITreeStreamQuery<EMObject> DisplayTree
+		{
+			get
+			{
+				return _tree;
+			}
+		}
+		
 		public void Awake()
 		{
 			if(_bytes != null)
