@@ -6,6 +6,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Diagnostics;
 
 namespace LLT
 {
@@ -44,11 +45,23 @@ namespace LLT
 		
 		public IEnumerator<string> DependencyCheck()
 		{
+			UnityEditor.EditorApplication.CallbackFunction update = null;
+			
 			if(_depencyCheck == null)
 			{
 				_depencyCheck = DependencyCheckInternal();
+				
+				update = ()=>
+				{
+					_depencyCheck.MoveNext();
+				};
+				
+				UnityEditor.EditorApplication.update += update;
 			}
-			return _depencyCheck;
+			
+			while(_depencyCheck.MoveNext())yield return _depencyCheck.Current;
+			
+			UnityEditor.EditorApplication.update -= update;
 		}
 		
 		private IEnumerator<string> DependencyCheckInternal()
@@ -59,22 +72,56 @@ namespace LLT
 				while(!www.isDone)yield return string.Format("Missing depencies: Downloading flex sdk ({0}%)", www.progress * 100);
 				
 				var bytes = www.bytes;
-				System.Threading.ThreadPool.QueueUserWorkItem((x)=>
+				if(Application.platform == RuntimePlatform.OSXEditor)
 				{
-					using(var stream = new MemoryStream(bytes))
+					var tempPath = Path.GetFullPath(UnityEditor.FileUtil.GetUniqueTempPathInProject());
+					System.Threading.ThreadPool.QueueUserWorkItem((x)=>
 					{
-						var zipFile = Ionic.Zip.ZipFile.Read(stream);
-						zipFile.ExtractAll(FlexSDK);
-					}
+						File.WriteAllBytes(tempPath, bytes);
+						
+						Directory.CreateDirectory(FlexSDK);
+						var processStartInfo = new ProcessStartInfo("unzip", tempPath);
+						processStartInfo.UseShellExecute = false;
+						processStartInfo.RedirectStandardError = true;
+						processStartInfo.RedirectStandardOutput = true;
+						processStartInfo.WorkingDirectory = FlexSDK;
+						
+						using(var process = Process.Start(processStartInfo))
+						{
+							process.WaitForExit();
+							
+							if(process.ExitCode != 0)
+							{
+								UnityEngine.Debug.LogError(process.StandardError.ReadToEnd());
+							}
+							else
+							{
+								UnityEngine.Debug.Log(process.StandardOutput.ReadToEnd());
+							}
+						}
+
+						bytes = null;
+					});
 					
-					bytes = null;
-				});
-				
+				}
+				else
+				{
+					System.Threading.ThreadPool.QueueUserWorkItem((x)=>
+					{
+						using(var stream = new MemoryStream(bytes))
+						{
+							var zipFile = Ionic.Zip.ZipFile.Read(stream);
+							zipFile.ExtractAll(FlexSDK);
+						}
+						
+						bytes = null;
+					});
+				}
 				while(bytes != null)yield return "Missing depencies: Unziping flex sdk.";
 				
 				if(Directory.Exists(FlexSDK))
 				{
-					Debug.LogWarning("Depencies resolved, reimporting all.");
+					UnityEngine.Debug.LogWarning("Depencies resolved, reimporting all.");
 					foreach(var swf in Directory.GetFiles("Assets", "*.swf", SearchOption.AllDirectories))
 					{
 						UnityEditor.AssetDatabase.ImportAsset(swf);

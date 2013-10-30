@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace LLT
 {
 	[ExecuteInEditMode]
-	public sealed class EMRoot : MonoBehaviour 
+	public sealed class EMRoot : EMMonoBehaviour 
 	{
 		private sealed class Drawcall
 		{
@@ -107,9 +107,7 @@ namespace LLT
 		private readonly EMSprite _parent = new EMSprite();
 		private readonly EMSprite _current = new EMSprite();
 		private readonly EMShape _shape = new EMShape();
-		
-		[SerializeField]
-		private MeshFilter _meshFilter;
+		private Mesh _mesh;
 		
 		private Vector3[] _vertices;
 		private Vector2[] _uv;
@@ -130,19 +128,24 @@ namespace LLT
 			}
 		}
 		
+		public Mesh Mesh 
+		{
+			get
+			{
+				if(_mesh == null)
+				{
+					_mesh = new Mesh();
+				}
+				return _mesh;
+			}
+		}
+		
 		public void Awake()
 		{
 			if(_bytes != null)
 			{
 				_tree.InitFromBytes(_bytes.bytes, null, new EMFactory());
-				
-				_meshFilter = GetComponent<MeshFilter>();
-				if(_meshFilter == null)
-				{
-					_meshFilter = gameObject.AddComponent<MeshFilter>();
-				}
-				_meshFilter.mesh = new Mesh();
-	
+
 				_parent.Init(_tree);
 				_current.Init(_tree);
 				_shape.Init(_tree);
@@ -236,12 +239,12 @@ namespace LLT
 			_vertices = new Vector3[_shapeCount * 4];
 			_uv = new Vector2[_shapeCount * 4];
 		
-			_meshFilter.sharedMesh.vertices = _vertices;
-			_meshFilter.sharedMesh.subMeshCount = _drawcalls.Count;	
-			
+			var mesh = Mesh;
+			mesh.vertices = _vertices;
+			mesh.subMeshCount = _drawcalls.Count;	
 			for(var i = 0; i < _drawcalls.Count; i++)
 			{
-				_meshFilter.sharedMesh.SetIndices(_drawcalls[i].Indices, MeshTopology.Quads, i);
+				mesh.SetIndices(_drawcalls[i].Indices, MeshTopology.Quads, i);
 			}
 		}
 		
@@ -305,8 +308,8 @@ namespace LLT
 			}
 			
 			_tree.Release();
-			_meshFilter.sharedMesh.uv = _uv;
-			_meshFilter.sharedMesh.vertices = _vertices;
+			Mesh.uv = _uv;
+			Mesh.vertices = _vertices;
 		}
 		
 		private void UpdateGeometry(EMShape shape, int shapeIndex, System.IntPtr treePtr)
@@ -443,6 +446,7 @@ namespace LLT
 		private void OnRenderObject() 
 		{
 			var mat = transform.localToWorldMatrix;
+			var mesh = Mesh;
 			for(var drawcallIndex = 0; drawcallIndex < _drawcalls.Count; drawcallIndex++)
 			{
 				if(_drawcalls[drawcallIndex].ShaderType == ShaderType.StencilDecrement)
@@ -452,7 +456,7 @@ namespace LLT
 				else
 				{
 					_drawcalls[drawcallIndex].Material.SetPass(0);
-					Graphics.DrawMeshNow(_meshFilter.sharedMesh, mat, drawcallIndex);
+					Graphics.DrawMeshNow(mesh, mat, drawcallIndex);
 				}
 			}
 		}

@@ -85,6 +85,7 @@ namespace LLT
 			
 			Raster();
 			
+			// Create text asset and wait for reference to exist.
 			foreach (var sprite in GetObjects<EMSwfDefineSprite>())
 			{
 				using (var tree = new EMAnimationTreeStream())
@@ -92,32 +93,45 @@ namespace LLT
 					sprite.Expand();
 					tree.InitFromTree(new EMSwfAnimation(header.FrameRate, sprite), null, new EMFactory());
 					tree.WriteAllBytes(_destinationFolder + sprite.Id + ".anim.bytes");
-					UnityEditor.AssetDatabase.ImportAsset(_destinationFolder + sprite.Id + ".anim.bytes");
 				}
 			}
-
+			UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
+			foreach (var sprite in GetObjects<EMSwfDefineSprite>())
+			{
+				while(UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + sprite.Id + ".anim.bytes") == null)yield return null;
+			}
+			
 			foreach (var root in _classes)
 	        {
-				var go = new GameObject();
-				
+				var prefabPath = _destinationFolder + root.Key + ".prefab";
+				var prefab = UnityEditor.AssetDatabase.LoadMainAssetAtPath(prefabPath) as GameObject;
+				if(prefab == null)
+				{
+					var temp = new GameObject();
+					prefab = UnityEditor.PrefabUtility.CreatePrefab(prefabPath, temp) as GameObject;
+					GameObject.DestroyImmediate(temp);
+				}
+				else
+				{
+					foreach(var comp in prefab.GetComponents<MonoBehaviour>().Where(x=>x is EMAnimationHead))
+					{
+						MonoBehaviour.DestroyImmediate(comp, true);
+					}
+				}
+
 				var defineSprite = root.Value as EMSwfDefineSprite;
 				using (var tree = new EMDisplayTreeStream())
 	            {
 					var positions = tree.InitFromTree(new EMSwfDefineSpriteNode(root.Key, EMSwfMatrix.Identity, 0, defineSprite), null, new EMFactory());
-					
-					UnityEditor.AssetDatabase.ImportAsset(_destinationFolder + root.Key + ".bytes");
-					UnityEditor.AssetDatabase.ImportAsset(_destinationFolder + "atlas.png");
-					UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
-					
-					var rootTextAsset = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + root.Key + ".bytes");
 					var atlas = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + "atlas.png");
 					
-					var rootComponent = go.AddComponent<EMRoot>();
+					var rootComponent = prefab.GetComponent<EMRoot>();
+					if(rootComponent == null)
+					{
+						rootComponent = prefab.AddComponent<EMRoot>();
+					}
 					
-					var field = typeof(EMRoot).GetField("_bytes",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-					field.SetValue(rootComponent, rootTextAsset);
-					
-					field = typeof(EMRoot).GetField("_atlas",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+					var field = typeof(EMRoot).GetField("_atlas",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 					field.SetValue(rootComponent, atlas);
 			
 					field = typeof(EMRoot).GetField("_tree",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -131,7 +145,7 @@ namespace LLT
 							var obj = tree.GetObject(positions[i].Value);
 							
 							var animTextAsset = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + spriteNode.Id + ".anim.bytes");
-							var animationHead = go.AddComponent<EMAnimationHead>();
+							var animationHead = prefab.AddComponent<EMAnimationHead>();
 							
 							field = typeof(EMAnimationHead).GetField("_data", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 							field.SetValue(animationHead, animTextAsset);
@@ -141,13 +155,18 @@ namespace LLT
 						}
 					}
 					
-					tree.WriteAllBytes(_destinationFolder + root.Key + ".bytes");
+					var rootTextAssetPath = _destinationFolder + root.Key + ".bytes";
+					tree.WriteAllBytes(rootTextAssetPath);
+					
+					TextAsset rootTextAsset = null;
+					UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
+					while((rootTextAsset = UnityEditor.AssetDatabase.LoadMainAssetAtPath(rootTextAssetPath) as TextAsset) == null)yield return null;
+					
+					field = typeof(EMRoot).GetField("_bytes",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+					field.SetValue(rootComponent, rootTextAsset);
 				}	
-	
-				UnityEditor.PrefabUtility.CreatePrefab(_destinationFolder + root.Key + ".prefab", go);
-				GameObject.DestroyImmediate(go);
 			}
-	       
+
 	        yield return null;
 	    }
 	
@@ -226,7 +245,7 @@ namespace LLT
 	        }
 	
 			var padding = 5;
-			
+		
 	        ProcessStartInfo processStartInfo = new ProcessStartInfo();
 	        processStartInfo.WorkingDirectory = Path.GetFullPath("Tools/Rasterizer/bin-debug/");
 	        processStartInfo.FileName = _adl;
@@ -241,7 +260,7 @@ namespace LLT
 	                                                   padding.ToString(),
 	                                                   "10"
 	                                                   );
-	
+
 	        Process process = Process.Start(processStartInfo);
 	        process.WaitForExit();
 			

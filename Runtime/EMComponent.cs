@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace LLT
 {
-	public abstract class EMComponent : MonoBehaviour
+	public abstract class EMComponent : EMMonoBehaviour
 	{
 		protected EMObject _object;
 		

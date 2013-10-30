@@ -13,6 +13,8 @@ namespace LLT
 {
 	public sealed class EMPostprocessor : AssetPostprocessor
 	{
+		private static Dictionary<string, IEnumerator> _importers;
+		
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
 			if(importedAssets.FirstOrDefault(x=>Path.GetExtension(x) == ".swf") != string.Empty)
@@ -27,10 +29,24 @@ namespace LLT
 			CoreTexture2D.PngDecoder = PngDecode;
 			CoreTexture2D.PngEncoder = PngEncode;
 			
+			if(_importers == null)
+			{
+				_importers = new Dictionary<string, IEnumerator>();
+				EditorApplication.update += ()=>
+				{
+					foreach(var importer in _importers.ToList())
+					{
+						if(!importer.Value.MoveNext())
+						{
+							_importers.Remove(importer.Key);
+						}
+					}
+				};
+			}
+			
 			foreach(var swf in importedAssets.Where(x=>Path.GetExtension(x) == ".swf"))
 			{
-				var import = EMSwfImporter.Import(swf, Path.GetDirectoryName(Path.GetDirectoryName(swf)) + "/EM/", "Temp/", EMSettings.Instance.FlexSDK + "/bin/adl");
-				while(import.MoveNext());
+				_importers[swf] = EMSwfImporter.Import(swf, Path.GetDirectoryName(Path.GetDirectoryName(swf)) + "/EM/", "Temp/", Path.GetFullPath(EMSettings.Instance.FlexSDK + "/bin/adl"));
 			}
 		}
 		
