@@ -53,15 +53,19 @@ namespace LLT
 				
 				update = ()=>
 				{
-					_depencyCheck.MoveNext();
+					if(_depencyCheck != null)
+					{
+						_depencyCheck.MoveNext();
+					}
 				};
 				
 				UnityEditor.EditorApplication.update += update;
 			}
 			
-			while(_depencyCheck.MoveNext())yield return _depencyCheck.Current;
+			while(_depencyCheck != null && _depencyCheck.MoveNext())yield return _depencyCheck.Current;
 			
 			UnityEditor.EditorApplication.update -= update;
+			_depencyCheck = null;
 		}
 		
 		private IEnumerator<string> DependencyCheckInternal()
@@ -70,6 +74,11 @@ namespace LLT
 			{
 				var www = new WWW(FlexSDKSource);
 				while(!www.isDone)yield return string.Format("Missing depencies: Downloading flex sdk ({0}%)", www.progress * 100);
+				
+				if(!string.IsNullOrEmpty(www.error))
+				{
+					yield break;	
+				}
 				
 				var bytes = www.bytes;
 				if(Application.platform == RuntimePlatform.OSXEditor)
