@@ -122,6 +122,10 @@
 	        {
 	            Matrix = new EMSwfMatrix(reader);
 	        }
+			else
+			{
+				Matrix = EMSwfMatrix.Identity;
+			}
 	
 	        if (PlaceFlagHasColorTransform)
 	        {

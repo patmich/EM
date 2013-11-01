@@ -13,6 +13,7 @@ namespace LLT
 	{
 	    private string _source;
 		private string _destinationFolder;
+		private string _destination;
 	    private string _temporaryFolder;
 	    private string _adl;
 	
@@ -20,13 +21,14 @@ namespace LLT
 	    private readonly CoreDictionary<ushort, EMSwfObject> _objects = new CoreDictionary<ushort, EMSwfObject>();
 	    private readonly CoreDictionary<string, EMSwfObject> _classes = new CoreDictionary<string, EMSwfObject>();
 		
-	    private EMSwfImporter(string source, string destination, string temporaryFolder, string adl)
+	    private EMSwfImporter(string source, string destinationFolder, string temporaryFolder, string adl)
 	    {
 	        _source = source;
-	
-			_destinationFolder = destination + Path.GetFileNameWithoutExtension(source) + "/";
+			_destinationFolder = destinationFolder;
+
+			Directory.CreateDirectory(_destinationFolder);
+			
 	        _temporaryFolder = string.Format("{0}/{1}/", temporaryFolder, Path.GetFileNameWithoutExtension(source));
-	
 	        if(Path.GetFullPath(_temporaryFolder).Contains(Directory.GetCurrentDirectory()))
 	        {
 	            if (Directory.Exists(_temporaryFolder))
@@ -81,8 +83,7 @@ namespace LLT
 				}
 	        }
 			
-			Directory.CreateDirectory(_destinationFolder);
-			
+
 			Raster();
 			
 			// Create text asset and wait for reference to exist.
@@ -98,7 +99,8 @@ namespace LLT
 			UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
 			foreach (var sprite in GetObjects<EMSwfDefineSprite>())
 			{
-				while(UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + sprite.Id + ".anim.bytes") == null)yield return null;
+				var wait = WaitAsset(_destinationFolder + sprite.Id + ".anim.bytes");
+				while(wait.MoveNext())yield return null;
 			}
 			
 			foreach (var root in _classes)
@@ -122,7 +124,7 @@ namespace LLT
 				var defineSprite = root.Value as EMSwfDefineSprite;
 				using (var tree = new EMDisplayTreeStream())
 	            {
-					var positions = tree.InitFromTree(new EMSwfDefineSpriteNode(root.Key, EMSwfMatrix.Identity, 0, defineSprite), null, new EMFactory());
+					var positions = tree.InitFromTree(new EMSwfDefineSpriteNode(root.Key, true, EMSwfMatrix.Identity, 0, defineSprite), null, new EMFactory());
 					var atlas = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + "atlas.png");
 					
 					var rootComponent = prefab.GetComponent<EMRoot>();
@@ -158,12 +160,13 @@ namespace LLT
 					var rootTextAssetPath = _destinationFolder + root.Key + ".bytes";
 					tree.WriteAllBytes(rootTextAssetPath);
 					
-					TextAsset rootTextAsset = null;
 					UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
-					while((rootTextAsset = UnityEditor.AssetDatabase.LoadMainAssetAtPath(rootTextAssetPath) as TextAsset) == null)yield return null;
+					
+					var wait = WaitAsset(rootTextAssetPath);
+					while(wait.MoveNext())yield return null;
 					
 					field = typeof(EMRoot).GetField("_bytes",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-					field.SetValue(rootComponent, rootTextAsset);
+					field.SetValue(rootComponent, UnityEditor.AssetDatabase.LoadMainAssetAtPath(rootTextAssetPath) as TextAsset);
 				}	
 			}
 
@@ -202,6 +205,10 @@ namespace LLT
 	            GetObject<EMSwfFileAttributes>().Write(binaryWriter);
 	            GetObject<EMSwfSetBackgroundColor>().Write(binaryWriter);
 				foreach(var obj in GetObjects<EMSwfDefineBitsLossless2>())
+				{
+					obj.Write(binaryWriter);
+				}
+				foreach(var obj in GetObjects<EMSwfDefineBitsLossless>())
 				{
 					obj.Write(binaryWriter);
 				}
@@ -292,5 +299,15 @@ namespace LLT
 				shapes[i].Uv = current;
 			}
 	    }
+		
+		private IEnumerator WaitAsset(string path)
+		{
+			UnityEngine.Object obj = null;
+			while((obj = UnityEditor.AssetDatabase.LoadMainAssetAtPath(path)) == null)
+			{
+				UnityEngine.Debug.Log("waiting for asset");
+				yield return null;
+			}
+		}
 	}
 }

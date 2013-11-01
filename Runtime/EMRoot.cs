@@ -140,19 +140,35 @@ namespace LLT
 			}
 		}
 		
-		public void Awake()
+		private void Awake()
 		{
-			if(_bytes != null)
+			enabled = false;
+			StartCoroutine(Init ());
+		}
+		
+		private IEnumerator Init()
+		{
+			while(_bytes == null)
 			{
-				_tree.InitFromBytes(_bytes.bytes, null, new EMFactory());
-
-				_parent.Init(_tree);
-				_current.Init(_tree);
-				_shape.Init(_tree);
-				
-				_siblingEnumerator = new TSTreeStreamSiblingEnumerator(_tree);
-				InitDrawcalls();
+				yield return null;
 			}
+			
+			_tree.InitFromBytes(_bytes.bytes, null, new EMFactory());
+
+			_parent.Init(_tree);
+			_current.Init(_tree);
+			_shape.Init(_tree);
+			
+			_siblingEnumerator = new TSTreeStreamSiblingEnumerator(_tree);
+		
+			enabled = true;
+		}
+		
+		private void Update()
+		{
+			// ToDo should not be necessary if mask clip count is constant.
+			InitDrawcalls();
+			UpdateTransforms();
 		}
 		
 		public void InitDrawcalls()
@@ -166,7 +182,7 @@ namespace LLT
 			var masked = new List<MaskOperation>();
 			
 			var iter = new TSTreeStreamDFSEnumerator<EMSprite>(_tree);
-			while(iter.MoveNext())
+			while(iter.MoveNext(false))
 			{
 				var clipCount = 0;
 				EMFactory.Type typeIndex = (EMFactory.Type)iter.Current.TypeIndex;
@@ -256,9 +272,11 @@ namespace LLT
 			
 			var shapeIndex = 0;
 			var treePtr = _tree.Pin();
+			var skipSubTree = false;
 			
-			while(iter.MoveNext())
+			while(iter.MoveNext(skipSubTree))
 			{
+				skipSubTree = false;
 				EMFactory.Type typeIndex = (EMFactory.Type)iter.Current.TypeIndex;
 				if(typeIndex == EMFactory.Type.EMSprite)
 				{	
@@ -279,6 +297,14 @@ namespace LLT
 						p1->LocalToWorld.M11 = p0->LocalToWorld.M10 * p1->Transform.M01 + p0->LocalToWorld.M11 * p1->Transform.M11;
 						p1->LocalToWorld.M02 = p0->LocalToWorld.M00 * p1->Transform.M02 + p0->LocalToWorld.M01 * p1->Transform.M12 + p0->LocalToWorld.M02;
 						p1->LocalToWorld.M12 = p0->LocalToWorld.M10 * p1->Transform.M02 + p0->LocalToWorld.M11 * p1->Transform.M12 + p0->LocalToWorld.M12;
+						
+						var temp = p1->LocalToWorld.Placed;
+						p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
+						
+						if(p1->LocalToWorld.Placed == 0 && temp == 0)
+						{
+							skipSubTree = true;
+						}
 					}
 	#endif
 				}
@@ -301,9 +327,20 @@ namespace LLT
 						p1->LocalToWorld.M11 = p0->LocalToWorld.M10 * p1->Transform.M01 + p0->LocalToWorld.M11 * p1->Transform.M11;
 						p1->LocalToWorld.M02 = p0->LocalToWorld.M00 * p1->Transform.M02 + p0->LocalToWorld.M01 * p1->Transform.M12 + p0->LocalToWorld.M02;
 						p1->LocalToWorld.M12 = p0->LocalToWorld.M10 * p1->Transform.M02 + p0->LocalToWorld.M11 * p1->Transform.M12 + p0->LocalToWorld.M12;
+						
+						var temp = p1->LocalToWorld.Placed;
+						p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
+						
+						if(p1->LocalToWorld.Placed == 0 && temp == 0)
+						{
+							skipSubTree = true;
+						}
 					}
 	#endif
-					UpdateGeometry(_shape, shapeIndex++, treePtr);
+					if(!skipSubTree)
+					{
+						UpdateGeometry(_shape, shapeIndex++, treePtr);
+					}
 				}
 			}
 			
@@ -316,10 +353,20 @@ namespace LLT
 		{
 			float m00, m01, m10, m11, m02, m12, xmin, ymin, xmax, ymax;
 	#if UNITY_WEB || !ALLOW_UNSAFE		
-			m00 = shape.LocalToWorld.M00;
-			m01 = shape.LocalToWorld.M01;
-			m10 = shape.LocalToWorld.M10;
-			m11 = shape.LocalToWorld.M11;
+			if(shape.LocalToWorld.Placed == 0)
+			{
+				m00 = 0f;
+				m01 = 0f;
+				m10 = 0f;
+				m11 = 0f;
+			}
+			else
+			{
+				m00 = shape.LocalToWorld.M00;
+				m01 = shape.LocalToWorld.M01;
+				m10 = shape.LocalToWorld.M10;
+				m11 = shape.LocalToWorld.M11;
+			}
 			m02 = shape.LocalToWorld.M02;
 			m12 = shape.LocalToWorld.M12;
 			
@@ -332,10 +379,20 @@ namespace LLT
 			{
 				EMShapeStructLayout* ptr = (EMShapeStructLayout*)((byte*)treePtr.ToPointer() + shape.Position);
 				
-				m00 = ptr->LocalToWorld.M00;
-				m01 = ptr->LocalToWorld.M01;
-				m10 = ptr->LocalToWorld.M10;
-				m11 = ptr->LocalToWorld.M11;
+				if(shape.LocalToWorld.Placed == 0)
+				{
+					m00 = 0f;
+					m01 = 0f;
+					m10 = 0f;
+					m11 = 0f;
+				}
+				else
+				{
+					m00 = ptr->LocalToWorld.M00;
+					m01 = ptr->LocalToWorld.M01;
+					m10 = ptr->LocalToWorld.M10;
+					m11 = ptr->LocalToWorld.M11;
+				}
 				m02 = ptr->LocalToWorld.M02;
 				m12 = ptr->LocalToWorld.M12;
 				
@@ -409,21 +466,6 @@ namespace LLT
 				_uv[shapeIndex * 4 + 3].y = ymax;
 			}
 		}
-		public void Update()
-		{
-	#if UNITY_EDITOR
-			if(_tree.RootTag == null)
-			{
-				Awake();
-				return;
-			}
-	#else
-			CoreAssert.Fatal(_tree != null && tree.RootTag != null);
-	#endif
-				
-			InitDrawcalls();
-			UpdateTransforms();
-		}
 		
 		private void AddDrawcall(ShaderType shaderType, int stencilRef)
 		{
@@ -459,6 +501,10 @@ namespace LLT
 					Graphics.DrawMeshNow(mesh, mat, drawcallIndex);
 				}
 			}
+		}
+		
+		private void OnDestroy()
+		{
 		}
 	}
 }

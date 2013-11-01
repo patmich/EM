@@ -1,6 +1,6 @@
 namespace LLT
 {
-	public sealed partial class EMAnimationKeyframe : TSTreeStreamEntry, ITSFactoryInstance
+	public sealed partial class EMAnimationKeyframe : LLT.TSTreeStreamEntry, LLT.ITSFactoryInstance
 	{
 		public const int Time_Offset = 0;
 		public const int EMAnimationKeyframeSizeOf = 4;
@@ -15,18 +15,6 @@ namespace LLT
 			set
 			{
 				_tree.Write(_position + 0, value);
-			}
-		}
-
-		public override int Position
-		{
-			get
-			{
-				return _position;
-			}
-			set
-			{
-				_position = value;
 			}
 		}
 

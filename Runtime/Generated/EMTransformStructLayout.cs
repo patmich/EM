@@ -32,5 +32,7 @@ namespace LLT
 		public byte OG;
 		[FieldOffset(31)]
 		public byte OB;
+		[FieldOffset(32)]
+		public byte Placed;
 	}
 }

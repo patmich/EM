@@ -1,6 +1,6 @@
 namespace LLT
 {
-	public sealed partial class EMTransform : TSTreeStreamEntry, ITSFactoryInstance
+	public sealed partial class EMTransform : LLT.TSTreeStreamEntry, LLT.ITSFactoryInstance
 	{
 		public const int M00_Offset = 0;
 		public const int M01_Offset = 4;
@@ -16,6 +16,7 @@ namespace LLT
 		public const int OR_Offset = 29;
 		public const int OG_Offset = 30;
 		public const int OB_Offset = 31;
+		public const int Placed_Offset = 32;
 		public const int EMTransformSizeOf = 36;
 
 
@@ -173,16 +174,15 @@ namespace LLT
 				_tree.Write(_position + 31, value);
 			}
 		}
-
-		public override int Position
+		public byte Placed
 		{
 			get
 			{
-				return _position;
+				return _tree.ReadByte(_position + 32);
 			}
 			set
 			{
-				_position = value;
+				_tree.Write(_position + 32, value);
 			}
 		}
 

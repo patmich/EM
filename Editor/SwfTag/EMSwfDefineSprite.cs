@@ -86,6 +86,7 @@ namespace LLT
 			Transform_M10_Offset,
 			Transform_M11_Offset,
 			Transform_M12_Offset,
+			Transform_Placed_Offset,
 			ClipCount_Offset,
 		}
 		
@@ -149,7 +150,7 @@ namespace LLT
 	                    {
 							if(!_childs.ContainsKey(key))
 							{
-	                        	_childs.Add(key, new EMSwfDefineSpriteNode(key.Name, currentFrame == 0 ? placeObject2.Matrix : EMSwfMatrix.Zero, currentFrame == 0 ? placeObject2.ClipDepth : (ushort)0, defineSprite));
+	                        	_childs.Add(key, new EMSwfDefineSpriteNode(key.Name, currentFrame == 0, placeObject2.Matrix, currentFrame == 0 ? placeObject2.ClipDepth : (ushort)0, defineSprite));
 							}
 	                    }
 						var defineShape = _importer.GetObject<EMSwfDefineShape>((ushort)placeObject2.RefId);
@@ -157,7 +158,7 @@ namespace LLT
 	                    {
 							if(!_childs.ContainsKey(key))
 							{
-	                        	_childs.Add(key, new EMSwfDefineShapeNode(key.Name, currentFrame == 0 ? placeObject2.Matrix : EMSwfMatrix.Zero, currentFrame == 0 ? placeObject2.ClipDepth : (ushort)0, defineShape));
+	                        	_childs.Add(key, new EMSwfDefineShapeNode(key.Name, currentFrame == 0, placeObject2.Matrix, currentFrame == 0 ? placeObject2.ClipDepth : (ushort)0, defineShape));
 							}
 	                    }
 	                }
@@ -225,6 +226,7 @@ namespace LLT
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_M02_Offset))].Add(0, 0f);
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_M12_Offset))].Add(0, 0f);
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(0, 0f);
+					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(0, 1f);
 				}
 				
 				var currentFrame = 0;
@@ -247,22 +249,17 @@ namespace LLT
 		                    {
 								if(currentFrame > 0 && childs[childIndex].FirstFrame > 0)
 								{
-									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M00_Offset))].Add(0, 0f);
-									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M11_Offset))].Add(0, 0f);
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(0, 0f);
 								}
 								
 								if(oldChildIndex != -1)
 								{
-									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.Transform_M00_Offset))].Add(currentFrame, 0f);
-									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.Transform_M11_Offset))].Add(currentFrame, 0f);
-									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.Transform_M01_Offset))].Add(currentFrame, 0f);
-									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.Transform_M10_Offset))].Add(currentFrame, 0f);
+									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 0f);
 									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f);
 								}
 							}
 							
 							var clipCount = childs.FindLastIndex(x=>x.Depth < placeObject2.ClipDepth) - childIndex;	
-							
 							
 							if(placeObject2.IsCharacterAtDepthReplaced())
 							{
@@ -293,6 +290,8 @@ namespace LLT
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M12_Offset))].Add(currentFrame, retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.Transform_M12_Offset))].Sample(currentFrame - 1));
 								}
 	
+								retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 1f);
+								
 								if(placeObject2.HasClipDepth())
 								{
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, clipCount);
@@ -336,10 +335,7 @@ namespace LLT
 						if(childIndex != -1)
 						{
 							var refId = childs[childIndex].RefId;
-							retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M00_Offset))].Add(currentFrame, 0f);
-							retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M11_Offset))].Add(currentFrame, 0f);
-							retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M01_Offset))].Add(currentFrame, 0f);
-							retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M10_Offset))].Add(currentFrame, 0f);
+							retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 0f);
 							retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f);
 						}
 					}

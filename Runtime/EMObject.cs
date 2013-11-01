@@ -16,6 +16,8 @@ namespace LLT
 		private ITSTreeStream _tree;
 		private TSTreeStreamTag _tag;
 		
+		public EMSprite Sprite { private set; get; }
+		
 		public EMAnimationHead AnimationHead
 		{
 			get
@@ -65,6 +67,13 @@ namespace LLT
 			_tag.Position = _position;
 			
 			_animationHead.Init(this);
+			
+			if((EMFactory.Type)_tag.TypeIndex == EMFactory.Type.EMSprite)
+			{
+				Sprite = new EMSprite();
+				Sprite.Init(_tree);
+				Sprite.Position = _tag.EntryPosition;
+			}
 		}
 	}
 }

@@ -1,6 +1,6 @@
 namespace LLT
 {
-	public sealed partial class EMSprite : TSTreeStreamEntry, ITSFactoryInstance
+	public sealed partial class EMSprite : LLT.TSTreeStreamEntry, LLT.ITSFactoryInstance
 	{
 		public const int Transform_M00_Offset = 0;
 		public const int Transform_M01_Offset = 4;
@@ -16,6 +16,7 @@ namespace LLT
 		public const int Transform_OR_Offset = 29;
 		public const int Transform_OG_Offset = 30;
 		public const int Transform_OB_Offset = 31;
+		public const int Transform_Placed_Offset = 32;
 		public const int LocalToWorld_M00_Offset = 36;
 		public const int LocalToWorld_M01_Offset = 40;
 		public const int LocalToWorld_M02_Offset = 44;
@@ -30,22 +31,23 @@ namespace LLT
 		public const int LocalToWorld_OR_Offset = 65;
 		public const int LocalToWorld_OG_Offset = 66;
 		public const int LocalToWorld_OB_Offset = 67;
-		public const int ClipCount_Offset = 70;
-		public const int AnimationId_Offset = 72;
+		public const int LocalToWorld_Placed_Offset = 68;
+		public const int ClipCount_Offset = 72;
+		public const int AnimationId_Offset = 74;
 		public const int EMSpriteSizeOf = 76;
 
-		public readonly EMTransform Transform = new EMTransform();
-		public readonly EMTransform LocalToWorld = new EMTransform();
+		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
+		public readonly LLT.EMTransform LocalToWorld = new LLT.EMTransform();
 
 		public ushort ClipCount
 		{
 			get
 			{
-				return _tree.ReadUInt16(_position + 70);
+				return _tree.ReadUInt16(_position + 69);
 			}
 			set
 			{
-				_tree.Write(_position + 70, value);
+				_tree.Write(_position + 69, value);
 			}
 		}
 		public ushort AnimationId

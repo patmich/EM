@@ -80,6 +80,11 @@ namespace LLT
 		
 		private void Update()
 		{
+			CoreAssert.Fatal(_object.Sprite != null);
+			if(_object.Sprite.LocalToWorld.Placed == 0)
+			{
+				return;
+			}
 			if(_animationClip == null)
 			{
 				return;

@@ -46,7 +46,7 @@ namespace LLT
 			
 			foreach(var swf in importedAssets.Where(x=>Path.GetExtension(x) == ".swf"))
 			{
-				_importers[swf] = EMSwfImporter.Import(swf, Path.GetDirectoryName(Path.GetDirectoryName(swf)) + "/EM/", "Temp/", Path.GetFullPath(EMSettings.Instance.FlexSDK + "/bin/adl"));
+				_importers[swf] = EMSwfImporter.Import(swf, EMSwfSettings.GetDestinationFolder(swf), "Temp/", Path.GetFullPath(EMSettings.Instance.FlexSDK + "/bin/adl"));
 			}
 		}
 		

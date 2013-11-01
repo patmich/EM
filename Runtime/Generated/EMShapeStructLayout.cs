@@ -5,13 +5,13 @@ namespace LLT
 	public struct EMShapeStructLayout
 	{
 		[FieldOffset(0)]
-		public EMTransformStructLayout Transform;
+		public LLT.EMTransformStructLayout Transform;
 		[FieldOffset(36)]
-		public EMTransformStructLayout LocalToWorld;
+		public LLT.EMTransformStructLayout LocalToWorld;
 		[FieldOffset(72)]
-		public EMRectStructLayout Rect;
+		public LLT.EMRectStructLayout Rect;
 		[FieldOffset(88)]
-		public EMRectStructLayout Uv;
+		public LLT.EMRectStructLayout Uv;
 		[FieldOffset(104)]
 		public ushort ClipCount;
 	}

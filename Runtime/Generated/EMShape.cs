@@ -1,6 +1,6 @@
 namespace LLT
 {
-	public sealed partial class EMShape : TSTreeStreamEntry, ITSFactoryInstance
+	public sealed partial class EMShape : LLT.TSTreeStreamEntry, LLT.ITSFactoryInstance
 	{
 		public const int Transform_M00_Offset = 0;
 		public const int Transform_M01_Offset = 4;
@@ -16,6 +16,7 @@ namespace LLT
 		public const int Transform_OR_Offset = 29;
 		public const int Transform_OG_Offset = 30;
 		public const int Transform_OB_Offset = 31;
+		public const int Transform_Placed_Offset = 32;
 		public const int LocalToWorld_M00_Offset = 36;
 		public const int LocalToWorld_M01_Offset = 40;
 		public const int LocalToWorld_M02_Offset = 44;
@@ -30,6 +31,7 @@ namespace LLT
 		public const int LocalToWorld_OR_Offset = 65;
 		public const int LocalToWorld_OG_Offset = 66;
 		public const int LocalToWorld_OB_Offset = 67;
+		public const int LocalToWorld_Placed_Offset = 68;
 		public const int Rect_X_Offset = 72;
 		public const int Rect_Y_Offset = 76;
 		public const int Rect_Width_Offset = 80;
@@ -41,10 +43,10 @@ namespace LLT
 		public const int ClipCount_Offset = 104;
 		public const int EMShapeSizeOf = 108;
 
-		public readonly EMTransform Transform = new EMTransform();
-		public readonly EMTransform LocalToWorld = new EMTransform();
-		public readonly EMRect Rect = new EMRect();
-		public readonly EMRect Uv = new EMRect();
+		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
+		public readonly LLT.EMTransform LocalToWorld = new LLT.EMTransform();
+		public readonly LLT.EMRect Rect = new LLT.EMRect();
+		public readonly LLT.EMRect Uv = new LLT.EMRect();
 
 		public ushort ClipCount
 		{

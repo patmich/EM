@@ -14,6 +14,7 @@ namespace LLT
 	[TSLayout(typeof(byte), "OR", 11)]
 	[TSLayout(typeof(byte), "OG", 12)]
 	[TSLayout(typeof(byte), "OB", 13)]
+	[TSLayout(typeof(byte), "Placed", 14)]
 	public sealed partial class EMTransform : TSTreeStreamEntry
 	{
 		public void MakeIdentity()
@@ -24,6 +25,7 @@ namespace LLT
 			M10 = 0f;
 			M11 = 1f;
 			M12 = 0f;
+			Placed = (byte)1;
 		}
 		
 		public void Concat(EMTransform localToWorld, EMTransform transform)
@@ -34,6 +36,8 @@ namespace LLT
 			M11 = localToWorld.M10 * transform.M01 + localToWorld.M11 * transform.M11;
 			M02 = localToWorld.M00 * transform.M02 + localToWorld.M01 * transform.M12 + localToWorld.M02;
 			M12 = localToWorld.M10 * transform.M02 + localToWorld.M11 * transform.M12 + localToWorld.M12;
+			Placed = (byte)(localToWorld.Placed & transform.Placed);
+		
 		}
 	}
 }

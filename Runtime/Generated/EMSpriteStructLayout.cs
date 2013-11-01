@@ -5,10 +5,10 @@ namespace LLT
 	public struct EMSpriteStructLayout
 	{
 		[FieldOffset(0)]
-		public EMTransformStructLayout Transform;
+		public LLT.EMTransformStructLayout Transform;
 		[FieldOffset(36)]
-		public EMTransformStructLayout LocalToWorld;
-		[FieldOffset(70)]
+		public LLT.EMTransformStructLayout LocalToWorld;
+		[FieldOffset(69)]
 		public ushort ClipCount;
 		[FieldOffset(72)]
 		public ushort AnimationId;

@@ -100,14 +100,6 @@ public struct EMSwfMatrix
         }
     }
 
-    public static EMSwfMatrix Zero
-    {
-        get
-        {
-            return new EMSwfMatrix() { _scaleX = 0f, _scaleY = 0f, _rotateSkewX = 0f, _rotateSkewY = 0f, _translateX = 0, _translateY = 0 };
-        }
-    }
-
     public float M00
     {
         get

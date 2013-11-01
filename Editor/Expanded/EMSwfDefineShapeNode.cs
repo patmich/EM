@@ -5,15 +5,17 @@ namespace LLT
 	public sealed class EMSwfDefineShapeNode : ITSTreeNode
 	{
 		private string _name;
-	    private EMSwfMatrix _matrix;
+	    private bool _placed;
+		private EMSwfMatrix _matrix;
 	    private EMSwfDefineShape _defineShape;
 		
 		public int ClipDepth { private set; get; }
 		public int ClipCount { set; get; }
 		
-	    internal EMSwfDefineShapeNode(string name, EMSwfMatrix matrix, int clipDepth, EMSwfDefineShape defineShape)
+	    internal EMSwfDefineShapeNode(string name, bool placed, EMSwfMatrix matrix, int clipDepth, EMSwfDefineShape defineShape)
 	    {
 			_name = name;
+			_placed = placed;
 	        _matrix = matrix;
 			_defineShape = defineShape;
 			ClipDepth = clipDepth;
@@ -64,7 +66,9 @@ namespace LLT
 			EMShape.Transform.M10 = _matrix.M10;
 			EMShape.Transform.M11 = _matrix.M11;
 			EMShape.Transform.M12 = _matrix.M12;
-				
+			
+			EMShape.Transform.Placed = (byte)(_placed ? 1 : 0);
+			
 			EMShape.Rect = new EMRectStructLayout();
 			EMShape.Rect.X = _defineShape.Bounds.XMin;
 			EMShape.Rect.Y = _defineShape.Bounds.YMin;

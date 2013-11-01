@@ -35,4 +35,8 @@ namespace LLT
 	public sealed class EMSwfDefineBitsLossless2 : EMSwfUnhandledObject
 	{
 	}
+	
+	public sealed class EMSwfDefineBitsLossless : EMSwfUnhandledObject
+	{
+	}
 }

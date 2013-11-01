@@ -6,15 +6,17 @@ namespace LLT
 	public sealed class EMSwfDefineSpriteNode : ITSTreeNode
 	{
 	    private string _name;
+		private bool _placed;
 	    private EMSwfMatrix _matrix;
 	    private EMSwfDefineSprite _defineSprite;
 		
 		public int ClipDepth { get; private set; }
 		public int ClipCount { get; set; }
 		
-	    internal EMSwfDefineSpriteNode(string name, EMSwfMatrix matrix, int clipDepth, EMSwfDefineSprite defineSprite)
+	    internal EMSwfDefineSpriteNode(string name, bool placed, EMSwfMatrix matrix, int clipDepth, EMSwfDefineSprite defineSprite)
 	    {
 	        _name = name;
+			_placed = placed;
 	        _matrix = matrix;
 			ClipDepth = clipDepth;
 	        _defineSprite = defineSprite;
@@ -75,7 +77,8 @@ namespace LLT
 			EMSprite.Transform.M10 = _matrix.M10;
 			EMSprite.Transform.M11 = _matrix.M11;
 			EMSprite.Transform.M12 = _matrix.M12;
-			
+			EMSprite.Transform.Placed = (byte)(_placed ? 1 : 0);
+
 			CoreAssert.Fatal(ClipCount < ushort.MaxValue);
 			EMSprite.ClipCount = (ushort)ClipCount;
 			

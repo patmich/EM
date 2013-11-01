@@ -1,6 +1,6 @@
 namespace LLT
 {
-	public sealed partial class EMRect : TSTreeStreamEntry, ITSFactoryInstance
+	public sealed partial class EMRect : LLT.TSTreeStreamEntry, LLT.ITSFactoryInstance
 	{
 		public const int X_Offset = 0;
 		public const int Y_Offset = 4;
@@ -51,18 +51,6 @@ namespace LLT
 			set
 			{
 				_tree.Write(_position + 12, value);
-			}
-		}
-
-		public override int Position
-		{
-			get
-			{
-				return _position;
-			}
-			set
-			{
-				_position = value;
 			}
 		}
 
