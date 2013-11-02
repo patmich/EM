@@ -265,18 +265,10 @@ namespace LLT
 							{
 								if(placeObject2.HasMatrix())
 								{
-									if(placeObject2.Matrix.HasRotate)
-									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M01_Offset))].Add(currentFrame, placeObject2.Matrix.M01);
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M10_Offset))].Add(currentFrame, placeObject2.Matrix.M10);
-									}
-									
-									if(placeObject2.Matrix.HasScale)
-									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M00_Offset))].Add(currentFrame, placeObject2.Matrix.M00);
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M11_Offset))].Add(currentFrame, placeObject2.Matrix.M11);
-									}
-									
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M01_Offset))].Add(currentFrame, placeObject2.Matrix.M01);
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M10_Offset))].Add(currentFrame, placeObject2.Matrix.M10);
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M00_Offset))].Add(currentFrame, placeObject2.Matrix.M00);
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M11_Offset))].Add(currentFrame, placeObject2.Matrix.M11);
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M02_Offset))].Add(currentFrame, placeObject2.Matrix.M02);
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M12_Offset))].Add(currentFrame, placeObject2.Matrix.M12);
 								}
@@ -305,20 +297,15 @@ namespace LLT
 							{
 								if(placeObject2.HasMatrix())
 								{
-									if(placeObject2.Matrix.HasRotate)
-									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M01_Offset))].Add(currentFrame, placeObject2.Matrix.M01);
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M10_Offset))].Add(currentFrame, placeObject2.Matrix.M10);
-									}
-									if(placeObject2.Matrix.HasScale)
-									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M00_Offset))].Add(currentFrame, placeObject2.Matrix.M00);
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M11_Offset))].Add(currentFrame, placeObject2.Matrix.M11);
-									}
-									
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M01_Offset))].Add(currentFrame, placeObject2.Matrix.M01);
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M10_Offset))].Add(currentFrame, placeObject2.Matrix.M10);
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M00_Offset))].Add(currentFrame, placeObject2.Matrix.M00);
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M11_Offset))].Add(currentFrame, placeObject2.Matrix.M11);
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M02_Offset))].Add(currentFrame, placeObject2.Matrix.M02);
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M12_Offset))].Add(currentFrame, placeObject2.Matrix.M12);
 								}
+								
+								retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 1f);
 								
 								if(placeObject2.HasClipDepth())
 								{

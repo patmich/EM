@@ -75,5 +75,16 @@ namespace LLT
 				Sprite.Position = _tag.EntryPosition;
 			}
 		}
+        
+        public bool GetPath(out string path)
+        {
+            path = string.Empty;
+            if(_tree != null)
+            {
+                CoreAssert.Fatal(_tag != null);
+                return _tree.RebuildPath(_tag, out path);
+            }
+            return false;
+        }
 	}
 }

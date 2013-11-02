@@ -11,15 +11,17 @@ namespace LLT
 		private ITSTreeStream _tree;
 		private TSTreeStreamEntry _entry;
 		
-		private TSTreeStreamSiblingEnumerator _childs;
-		private readonly List<int> _positions = new List<int>();
-		
+        private readonly List<int> _positions = new List<int>();
 		private EMAnimationTreeStream _animationTree;
-		
 		private EMAnimationClip _animationClip;
-		
 		private TSTreeStreamSiblingEnumerator _keyframesEnumerator;
-
+  
+        private string _label;
+        private float _realTimeSinceStartup;
+        
+        [SerializeField]
+        private bool _loop = true;
+         
 #if !ALLOW_UNSAFE
 #else
 		private TSTreeStreamSiblingEnumerator _keyframeValuesEnumerator;
@@ -36,12 +38,12 @@ namespace LLT
 		
 			_positions.Clear();
 			
-			_childs = new TSTreeStreamSiblingEnumerator(_object.Tree);
-			_childs.Init(_object.Tag);
+			var childs = new TSTreeStreamSiblingEnumerator(_object.Tree);
+			childs.Init(_object.Tag);
 			
-			while(_childs.MoveNext())
+			while(childs.MoveNext())
 			{
-				_positions.Add(_childs.Current.EntryPosition);
+				_positions.Add(childs.Current.EntryPosition);
 			}
 			
 			_animationTree = new EMAnimationTreeStream();
@@ -50,15 +52,12 @@ namespace LLT
 			var clipEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
 			clipEnumerator.Init(_animationTree.RootTag);
 			clipEnumerator.MoveNext();
-			
-			_animationClip = new EMAnimationClip();
+
+            _animationClip = new EMAnimationClip();
 			_animationClip.Init(_animationTree);
-			_animationClip.Position = clipEnumerator.Current.EntryPosition;
-		
-			_keyframesEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
-			_keyframesEnumerator.Init(clipEnumerator.Current);
-						
-			enabled = _keyframesEnumerator.MoveNext();
+            _keyframesEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
+            
+			GotoAndPlay(_animationTree.GetName(clipEnumerator.Current));
 			
 #if !ALLOW_UNSAFE
 #else			
@@ -68,8 +67,9 @@ namespace LLT
 		
 		public void GotoAndPlay(string label)
 		{
-			
-			var tag = _animationTree.FindTag(label);
+			_label = label;
+            
+			var tag = _animationTree.FindTag(_label);
 			_animationClip.Position = tag.EntryPosition;
 			
 			_keyframesEnumerator.Init(tag);
@@ -90,13 +90,19 @@ namespace LLT
 				return;
 			}
 			
-			_time += UnityEngine.Time.deltaTime;
+            _time += UnityEngine.Time.deltaTime;
 			if(_time > _animationClip.Length)
 			{
-				_time = _time % (_animationClip.Length);
-				
-				_keyframesEnumerator.Reset();
-				_keyframesEnumerator.MoveNext();
+                if(_loop)
+                {
+                    _time = _time % (_animationClip.Length);
+    				_keyframesEnumerator.Reset();
+    				_keyframesEnumerator.MoveNext();
+                }
+                else
+                {
+                    _time = _animationClip.Length;
+                }
 			}
 #if !ALLOW_UNSAFE
 #else
@@ -105,14 +111,14 @@ namespace LLT
 				var ptr = _animationTree.Pin();
 				EMAnimationKeyframeStructLayout keyframe = *(EMAnimationKeyframeStructLayout*)((byte*)ptr.ToPointer() + _keyframesEnumerator.Current.EntryPosition);
 				
-				while(!_keyframesEnumerator.Done && _time > keyframe.Time)
+				while(!_keyframesEnumerator.Done && _time >= keyframe.Time)
 				{
-					_keyframeValuesEnumerator.Init(_keyframesEnumerator.Current);
-
-					while(_keyframeValuesEnumerator.MoveNext())
+					EMAnimationKeyframeValueStructLayout* keyframeValues = (EMAnimationKeyframeValueStructLayout*)((byte*)ptr.ToPointer() + _keyframesEnumerator.Current.EntryPosition + EMAnimationKeyframe.EMAnimationKeyframeSizeOf);
+					var count = (_keyframesEnumerator.Current.EntrySizeOf - EMAnimationKeyframe.EMAnimationKeyframeSizeOf)/EMAnimationKeyframeValue.EMAnimationKeyframeValueSizeOf;
+			
+					for(var i = 0; i < count; i++)
 					{
-						EMAnimationKeyframeValueStructLayout keyframeValue = *(EMAnimationKeyframeValueStructLayout*)((byte*)ptr.ToPointer() + _keyframeValuesEnumerator.Current.EntryPosition);
-					
+						EMAnimationKeyframeValueStructLayout keyframeValue = keyframeValues[i];
 						CoreAssert.Fatal(0 <= keyframeValue.ChildIndex && keyframeValue.ChildIndex < _positions.Count);
 						
 						_entry.Position = _positions[keyframeValue.ChildIndex];
@@ -130,5 +136,47 @@ namespace LLT
 			}
 #endif
 		}
+#if UNITY_EDITOR
+        public void OnInspectorGUI()
+        {
+            if(_object != null)
+            {
+                var path = string.Empty;
+                if(_object.GetPath(out path))
+                {
+                    UnityEditor.EditorGUILayout.LabelField("Path: " + path);
+                }
+                
+                _loop = UnityEditor.EditorGUILayout.Toggle("Loop: ", _loop);
+                
+                if(!_loop && GUILayout.Button("Play once"))
+                {
+                    GotoAndPlay(_label);
+                }
+                    
+                if(_animationTree != null)
+                {
+                    var clipEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
+                    clipEnumerator.Init(_animationTree.RootTag);
+                    
+                    var labels = new List<string>();
+                    while(clipEnumerator.MoveNext())
+                    {
+                        labels.Add(_animationTree.GetName(clipEnumerator.Current));
+                    }
+                    
+                    if(labels.Count > 0)
+                    {
+                        var oldIndex = labels.IndexOf(_label);
+                        var newIndex = UnityEditor.EditorGUILayout.Popup(oldIndex == -1 ? 0 : oldIndex, labels.ToArray());
+                        if(oldIndex != newIndex)
+                        {
+                            GotoAndPlay(labels[newIndex]);
+                        }
+                    }
+                }
+            }
+        }
+#endif
 	}
 }

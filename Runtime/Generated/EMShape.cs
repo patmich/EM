@@ -41,7 +41,8 @@ namespace LLT
 		public const int Uv_Width_Offset = 96;
 		public const int Uv_Height_Offset = 100;
 		public const int ClipCount_Offset = 104;
-		public const int EMShapeSizeOf = 108;
+		public const int ShapeIndex_Offset = 108;
+		public const int EMShapeSizeOf = 112;
 
 		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
 		public readonly LLT.EMTransform LocalToWorld = new LLT.EMTransform();
@@ -57,6 +58,17 @@ namespace LLT
 			set
 			{
 				_tree.Write(_position + 104, value);
+			}
+		}
+		public int ShapeIndex
+		{
+			get
+			{
+				return _tree.ReadInt32(_position + 108);
+			}
+			set
+			{
+				_tree.Write(_position + 108, value);
 			}
 		}
 
@@ -89,7 +101,7 @@ namespace LLT
 		{
 			get
 			{
-				return 108;
+				return 112;
 			}
 		}
 	}

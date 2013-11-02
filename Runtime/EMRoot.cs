@@ -160,7 +160,7 @@ namespace LLT
 			_shape.Init(_tree);
 			
 			_siblingEnumerator = new TSTreeStreamSiblingEnumerator(_tree);
-		
+		    InitDrawcalls();
 			enabled = true;
 		}
 		
@@ -212,6 +212,8 @@ namespace LLT
 				
 				if(typeIndex == EMFactory.Type.EMShape)
 				{
+                    _shape.ShapeIndex = _shapeCount;
+                        
 					MaskOperation maskOperation = null;
 					if(mask.Count > 0)
 					{
@@ -270,7 +272,6 @@ namespace LLT
 			iter.Parent.LocalToWorld.MakeIdentity();
 			iter.Parent.LocalToWorld.M11 = -1f;
 			
-			var shapeIndex = 0;
 			var treePtr = _tree.Pin();
 			var skipSubTree = false;
 			
@@ -339,7 +340,7 @@ namespace LLT
 	#endif
 					if(!skipSubTree)
 					{
-						UpdateGeometry(_shape, shapeIndex++, treePtr);
+						UpdateGeometry(_shape, treePtr);
 					}
 				}
 			}
@@ -349,9 +350,11 @@ namespace LLT
 			Mesh.vertices = _vertices;
 		}
 		
-		private void UpdateGeometry(EMShape shape, int shapeIndex, System.IntPtr treePtr)
+		private void UpdateGeometry(EMShape shape, System.IntPtr treePtr)
 		{
+            int shapeIndex = shape.ShapeIndex;
 			float m00, m01, m10, m11, m02, m12, xmin, ymin, xmax, ymax;
+            
 	#if UNITY_WEB || !ALLOW_UNSAFE		
 			if(shape.LocalToWorld.Placed == 0)
 			{
@@ -487,20 +490,23 @@ namespace LLT
 		
 		private void OnRenderObject() 
 		{
-			var mat = transform.localToWorldMatrix;
-			var mesh = Mesh;
-			for(var drawcallIndex = 0; drawcallIndex < _drawcalls.Count; drawcallIndex++)
-			{
-				if(_drawcalls[drawcallIndex].ShaderType == ShaderType.StencilDecrement)
-				{
-					Graphics.Blit(null, _drawcalls[drawcallIndex].Material);
-				}
-				else
-				{
-					_drawcalls[drawcallIndex].Material.SetPass(0);
-					Graphics.DrawMeshNow(mesh, mat, drawcallIndex);
-				}
-			}
+            if((Camera.current.cullingMask & (1 << gameObject.layer)) > 0)
+            {
+    			var mat = transform.localToWorldMatrix;
+    			var mesh = Mesh;
+    			for(var drawcallIndex = 0; drawcallIndex < _drawcalls.Count; drawcallIndex++)
+    			{
+    				if(_drawcalls[drawcallIndex].ShaderType == ShaderType.StencilDecrement)
+    				{
+    					Graphics.Blit(null, _drawcalls[drawcallIndex].Material);
+    				}
+    				else
+    				{
+    					_drawcalls[drawcallIndex].Material.SetPass(0);
+    					Graphics.DrawMeshNow(mesh, mat, drawcallIndex);
+    				}
+    			}
+            }
 		}
 		
 		private void OnDestroy()

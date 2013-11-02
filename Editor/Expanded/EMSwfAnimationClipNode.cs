@@ -11,6 +11,7 @@ namespace LLT
 		private readonly string  _name;
 		private readonly int _startIndex;
 		private readonly List<KeyValuePair<EMSwfCurveKey, EMSwfAnimationCurve>> _curves;
+		private readonly List<ITSTreeNode> _childs = new List<ITSTreeNode>();
 		
 		public EMSwfAnimationClipNode(float frameRate, string name, int startIndex, List<EMSwfObject> controlTags, List<KeyValuePair<EMSwfCurveKey, EMSwfAnimationCurve>> curves)
 		{
@@ -19,23 +20,32 @@ namespace LLT
 			_startIndex = startIndex;
 			_controlTags = controlTags;
 			_curves = curves;
+			
+			var currentIndex = _startIndex;
+			var endIndex = _startIndex;
+			for(var i = 0; i < _controlTags.Count; i++)
+			{
+				var controlTag = _controlTags[i];
+				if(controlTag is EMSwfShowFrame)
+				{
+					endIndex++;
+				}
+			}
+			for(var i = 0; i < _controlTags.Count; i++)
+			{
+				var controlTag = _controlTags[i];
+				if(controlTag is EMSwfShowFrame)
+				{
+					_childs.Add(new EMSwfAnimationKeyframeNode(_frameRate, _startIndex, endIndex - 1, currentIndex++, _curves));
+				}
+			}
 		}
 		
 		public System.Collections.Generic.List<ITSTreeNode> Childs 
 		{
 			get 
 			{
-				var childs = new List<ITSTreeNode>();
-				var currentIndex = _startIndex;
-				for(var i = 0; i < _controlTags.Count; i++)
-				{
-					var controlTag = _controlTags[i];
-					if(controlTag is EMSwfShowFrame)
-					{
-						childs.Add(new EMSwfAnimationKeyframeNode(_frameRate, _startIndex, currentIndex++, _curves));
-					}
-				}
-				return childs;
+				return _childs;
 			}
 		}
 		
