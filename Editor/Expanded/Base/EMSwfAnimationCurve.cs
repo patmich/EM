@@ -6,6 +6,11 @@ public sealed class EMSwfAnimationCurve
 	{
 		public int Index;
 		public float Value;
+		
+		public override string ToString ()
+		{
+			return string.Format ("[Keyframe] Index={0}, Value={1}", Index, Value);
+		}
 	}
 	
 	private readonly List<Keyframe> _keyframes = new List<Keyframe>();
@@ -19,7 +24,7 @@ public sealed class EMSwfAnimationCurve
 		Add(0, value);
 	}
 	
-	public void Add(int index, float value)
+	public bool Add(int index, float value, bool removeDupe = true)
 	{
 		var indexOf = _keyframes.FindLastIndex((x)=>x.Index <= index);
 		var newKeyframe = new Keyframe(){Index = index, Value = value};
@@ -27,20 +32,27 @@ public sealed class EMSwfAnimationCurve
 		{
 			if(_keyframes[indexOf].Index == index)
 			{
-				_keyframes[indexOf] = newKeyframe;
+				if(_keyframes[indexOf].Value != newKeyframe.Value)
+				{
+					_keyframes[indexOf] = newKeyframe;
+					return true;
+				}
 			}
 			else
 			{
-				if(_keyframes[indexOf].Value != value)
+				if(_keyframes[indexOf].Value != value || !removeDupe)
 				{
 					_keyframes.Insert(indexOf + 1, newKeyframe);
+					return true;
 				}
 			}
 		}
 		else
 		{
 			_keyframes.Add(newKeyframe);
+			return true;
 		}
+		return false;
 	}
 	
 	public float Sample(int index)
@@ -69,5 +81,12 @@ public sealed class EMSwfAnimationCurve
 		{
 			return _keyframes.Count;
 		}
+	}
+	
+	public override string ToString ()
+	{
+		var retVal = string.Empty;
+		_keyframes.ForEach(x=>retVal+=x + "\n");
+		return retVal;
 	}
 }

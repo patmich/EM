@@ -113,7 +113,7 @@ namespace LLT
 		private Vector2[] _uv;
 	
 		private readonly List<Drawcall> _drawcalls = new List<Drawcall>();
-		private int _shapeCount;
+		private ushort _shapeCount;
 		
 		// ToDo need as many shared material multiple as mask depth.
 		private readonly Material[] _sharedMaterials = new Material[(int)ShaderType.Count * 2];
@@ -135,6 +135,7 @@ namespace LLT
 				if(_mesh == null)
 				{
 					_mesh = new Mesh();
+					_mesh.MarkDynamic();
 				}
 				return _mesh;
 			}
@@ -160,18 +161,43 @@ namespace LLT
 			_shape.Init(_tree);
 			
 			_siblingEnumerator = new TSTreeStreamSiblingEnumerator(_tree);
-		    InitDrawcalls();
+		    InitMesh();
 			enabled = true;
 		}
 		
 		private void Update()
 		{
-			// ToDo should not be necessary if mask clip count is constant.
-			InitDrawcalls();
-			UpdateTransforms();
+			var mesh = Mesh;
+			bool updateDrawcalls = UpdateTransforms();
+			
+			mesh.vertices = _vertices;
+			mesh.uv = _uv;
+			
+			if(updateDrawcalls)
+			{
+				UpdateDrawcalls();
+			}
 		}
 		
-		public void InitDrawcalls()
+		private void InitMesh()
+		{
+			_shapeCount = 0;
+
+			var iter = new TSTreeStreamDFSEnumerator<EMSprite>(_tree);
+			while(iter.MoveNext(false))
+			{
+				if((EMFactory.Type)iter.Current.TypeIndex == EMFactory.Type.EMShape)
+				{
+					_shape.Position = iter.Current.EntryPosition;
+                    _shape.ShapeIndex = _shapeCount++;
+				}	
+			}
+			
+			_vertices = new Vector3[_shapeCount * 4];
+			_uv = new Vector2[_shapeCount * 4];
+		}
+		
+		private void UpdateDrawcalls()
 		{
 			_drawcalls.Clear();
 			_shapeCount = 0;
@@ -212,8 +238,6 @@ namespace LLT
 				
 				if(typeIndex == EMFactory.Type.EMShape)
 				{
-                    _shape.ShapeIndex = _shapeCount;
-                        
 					MaskOperation maskOperation = null;
 					if(mask.Count > 0)
 					{
@@ -222,7 +246,7 @@ namespace LLT
 						if(maskOperation != null)
 						{						
 							AddDrawcall(ShaderType.StencilIncrement, maskOperation.StencilRef);
-							_drawcalls[_drawcalls.Count - 1].Add(_shapeCount++);
+							_drawcalls[_drawcalls.Count - 1].Add(_shape.ShapeIndex);
 						}
 					}
 					
@@ -232,7 +256,7 @@ namespace LLT
 						if(maskOperation != null)
 						{
 							AddDrawcall(ShaderType.Transparent, maskOperation.StencilRef);
-							_drawcalls[_drawcalls.Count - 1].Add(_shapeCount++);
+							_drawcalls[_drawcalls.Count - 1].Add(_shape.ShapeIndex);
 							
 							if(maskOperation.End <= iter.Current.SiblingPosition)
 							{
@@ -249,24 +273,21 @@ namespace LLT
 					
 					if(maskOperation == null)
 					{
-						_drawcalls[_drawcalls.Count - 1].Add(_shapeCount++);
+						_drawcalls[_drawcalls.Count - 1].Add(_shape.ShapeIndex);
 					}
 				}	
 			}
 			
-			_vertices = new Vector3[_shapeCount * 4];
-			_uv = new Vector2[_shapeCount * 4];
-		
 			var mesh = Mesh;
-			mesh.vertices = _vertices;
 			mesh.subMeshCount = _drawcalls.Count;	
+			
 			for(var i = 0; i < _drawcalls.Count; i++)
 			{
 				mesh.SetIndices(_drawcalls[i].Indices, MeshTopology.Quads, i);
 			}
 		}
 		
-		private void UpdateTransforms()
+		private bool UpdateTransforms()
 		{
 			var iter = new TSTreeStreamDFSEnumerator<EMSprite>(_tree);
 			iter.Parent.LocalToWorld.MakeIdentity();
@@ -274,6 +295,8 @@ namespace LLT
 			
 			var treePtr = _tree.Pin();
 			var skipSubTree = false;
+			
+			var updateDrawCalls = false;
 			
 			while(iter.MoveNext(skipSubTree))
 			{
@@ -306,6 +329,9 @@ namespace LLT
 						{
 							skipSubTree = true;
 						}
+						
+						updateDrawCalls |= ((p1->UpdateFlag & 1) > 0);
+						p1->UpdateFlag = 0;
 					}
 	#endif
 				}
@@ -336,6 +362,9 @@ namespace LLT
 						{
 							skipSubTree = true;
 						}
+						
+						updateDrawCalls |= ((p1->UpdateFlag & 1) > 0);
+						p1->UpdateFlag = 0;
 					}
 	#endif
 					if(!skipSubTree)
@@ -346,8 +375,7 @@ namespace LLT
 			}
 			
 			_tree.Release();
-			Mesh.uv = _uv;
-			Mesh.vertices = _vertices;
+			return updateDrawCalls;
 		}
 		
 		private void UpdateGeometry(EMShape shape, System.IntPtr treePtr)

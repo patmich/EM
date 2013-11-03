@@ -10,7 +10,7 @@ namespace LLT
 		public LLT.EMTransformStructLayout LocalToWorld;
 		[FieldOffset(69)]
 		public ushort ClipCount;
-		[FieldOffset(72)]
-		public ushort AnimationId;
+		[FieldOffset(71)]
+		public byte UpdateFlag;
 	}
 }

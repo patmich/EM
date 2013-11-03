@@ -6,6 +6,7 @@ namespace LLT
 	[TSLayout(typeof(EMRect), "Uv", 3)]
 	[TSLayout(typeof(ushort), "ClipCount", 4)]
     [TSLayout(typeof(ushort), "ShapeIndex", 5)]
+	[TSLayout(typeof(byte), "UpdateFlag", 6)]
 	public sealed partial class EMShape : TSTreeStreamEntry
 	{
 		public new int FactoryTypeIndex 

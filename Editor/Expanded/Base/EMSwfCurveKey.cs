@@ -70,5 +70,9 @@ namespace LLT
 	
 	        return retVal;
 	    }
+		public override string ToString ()
+		{
+			return string.Format ("[EMSwfCurveKey: ChildIndex={0}, Offset={1}, PropertyType={2}]", ChildIndex, Offset, PropertyType);
+		}
 	}
 }

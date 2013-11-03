@@ -14,7 +14,9 @@ namespace LLT
 		public LLT.EMRectStructLayout Uv;
 		[FieldOffset(104)]
 		public ushort ClipCount;
+		[FieldOffset(106)]
+		public ushort ShapeIndex;
 		[FieldOffset(108)]
-		public int ShapeIndex;
+		public byte UpdateFlag;
 	}
 }

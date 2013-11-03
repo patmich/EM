@@ -88,6 +88,7 @@ namespace LLT
 			Transform_M12_Offset,
 			Transform_Placed_Offset,
 			ClipCount_Offset,
+			UpdateFlag_Offset,
 		}
 		
 	    private EMSwfImporter _importer;
@@ -255,7 +256,11 @@ namespace LLT
 								if(oldChildIndex != -1)
 								{
 									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 0f);
-									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f);
+									
+									if(retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f))
+									{
+										retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+									}
 								}
 							}
 							
@@ -268,7 +273,7 @@ namespace LLT
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M01_Offset))].Add(currentFrame, placeObject2.Matrix.M01);
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M10_Offset))].Add(currentFrame, placeObject2.Matrix.M10);
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M00_Offset))].Add(currentFrame, placeObject2.Matrix.M00);
-									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M11_Offset))].Add(currentFrame, placeObject2.Matrix.M11);
+									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M11_Offset))].Add(currentFrame, placeObject2.Matrix.M11);					
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M02_Offset))].Add(currentFrame, placeObject2.Matrix.M02);
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_M12_Offset))].Add(currentFrame, placeObject2.Matrix.M12);
 								}
@@ -286,11 +291,17 @@ namespace LLT
 								
 								if(placeObject2.HasClipDepth())
 								{
-									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, clipCount);
+									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, clipCount))
+									{
+										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+									}
 								}
 								else
 								{
-									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Sample(currentFrame - 1));
+									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Sample(currentFrame - 1)))
+									{
+										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+									}
 								}
 							}
 							else
@@ -310,6 +321,10 @@ namespace LLT
 								if(placeObject2.HasClipDepth())
 								{
 									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, clipCount);
+									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false))
+									{
+										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+									}
 								}
 							}
 						}
@@ -323,7 +338,11 @@ namespace LLT
 						{
 							var refId = childs[childIndex].RefId;
 							retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 0f);
-							retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f);
+							
+							if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f))
+							{
+								retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+							}
 						}
 					}
 				}

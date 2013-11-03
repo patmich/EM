@@ -33,7 +33,7 @@ namespace LLT
 		public const int LocalToWorld_OB_Offset = 67;
 		public const int LocalToWorld_Placed_Offset = 68;
 		public const int ClipCount_Offset = 72;
-		public const int AnimationId_Offset = 74;
+		public const int UpdateFlag_Offset = 74;
 		public const int EMSpriteSizeOf = 76;
 
 		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
@@ -50,15 +50,15 @@ namespace LLT
 				_tree.Write(_position + 69, value);
 			}
 		}
-		public ushort AnimationId
+		public byte UpdateFlag
 		{
 			get
 			{
-				return _tree.ReadUInt16(_position + 72);
+				return _tree.ReadByte(_position + 71);
 			}
 			set
 			{
-				_tree.Write(_position + 72, value);
+				_tree.Write(_position + 71, value);
 			}
 		}
 

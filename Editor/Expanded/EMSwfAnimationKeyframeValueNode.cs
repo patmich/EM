@@ -71,5 +71,10 @@ namespace LLT
 				return EMAnimationKeyframeValue.EMAnimationKeyframeValueSizeOf;
 			}
 		}
+		
+		public override string ToString ()
+		{
+			return string.Format ("[EMSwfAnimationKeyframeValueNode: CurveKey={0}, Value={1}]", _curveKey, _value);
+		}
 	}
 }
