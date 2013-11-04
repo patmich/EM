@@ -13,5 +13,9 @@ namespace LLT
 			var animationHead = target as EMAnimationHead;
 			animationHead.OnInspectorGUI();
 		}
+		/*public override in
+		{
+			v
+		}*/
 	}
 }
