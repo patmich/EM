@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using System.Collections;
 
 namespace LLT
 {
@@ -23,13 +24,18 @@ namespace LLT
 			
 		}
 		
-		public void Link(EMRoot root)
+		public IEnumerator Link(EMRoot root)
 		{
-			var tag = new TSTreeStreamTag(_tree);
-			tag.Position = Position - TSTreeStreamTag.TSTreeStreamTagSizeOf;
-			
-			root.gameObject.SetActive(false); 
-			_tree.Link(tag, new EMTreeStreamDFSEnumerator(root));
+            var displayTree = _tree as EMDisplayTreeStream;
+            var link = root.Link(displayTree);
+            while(link.MoveNext())yield return null;
+            
+            displayTree.UpdateFlag |= EMUpdateFlag.Flag(EMUpdateFlag.Flags.InitMesh, EMUpdateFlag.Flags.UpdateDrawCalls);
+            
+            var tag = new TSTreeStreamTag(_tree);
+            tag.Position = Position - TSTreeStreamTag.TSTreeStreamTagSizeOf;
+            
+			_tree.Link(tag, link.Current);
 		}
 	}
 }

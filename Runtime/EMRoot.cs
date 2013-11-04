@@ -21,7 +21,7 @@ namespace LLT
 			
 			public Material Material { private set; get; }
 			public ShaderType ShaderType { private set; get; }
-			
+			public Texture Texture { private set; get; }
 			public int[] Indices
 			{
 				get
@@ -59,10 +59,11 @@ namespace LLT
 				}
 			}
 			
-			public Drawcall(ShaderType shaderType, Material material)
+			public Drawcall(ShaderType shaderType, Texture texture, Material material)
 			{
 				ShaderType = shaderType;
 				Material = material;
+                Texture = texture;
 			}
 			
 			public void Add(int shapeIndex)
@@ -115,8 +116,12 @@ namespace LLT
 		// ToDo need as many shared material multiple as mask depth.
 		private readonly Material[] _sharedMaterials = new Material[(int)ShaderType.Count * 2];
 		private TSTreeStreamSiblingEnumerator _siblingEnumerator;
-		private bool _updateDrawcalls;
-		
+        private CoreTask _init;
+        
+#pragma warning disable 0414        
+        private EMDisplayTreeStream _parent;
+#pragma warning restore 0414
+        
 		public ITSTreeStream DisplayTree
 		{
 			get
@@ -140,9 +145,12 @@ namespace LLT
 		
 		private void Awake()
 		{
-			_updateDrawcalls = true;
+			_tree.UpdateFlag = EMUpdateFlag.Flag(EMUpdateFlag.Flags.InitMesh, EMUpdateFlag.Flags.UpdateDrawCalls);
+            
 			enabled = false;
-			StartCoroutine(Init ());
+            
+            _init = CoreTask.Wrap(Init ());
+			StartCoroutine(_init);
 		}
 		
 		public EMObject FindObject(params string[] path)
@@ -158,53 +166,56 @@ namespace LLT
 			}
 			
 			_tree.InitFromBytes(_bytes.bytes, null, new EMFactory());
-			
 			_siblingEnumerator = new TSTreeStreamSiblingEnumerator(_tree);
-		    InitMesh();
 			enabled = true;
 		}
 		
 		private void Update()
 		{
-			InitMesh();
+            if(EMUpdateFlag.Should(_tree.UpdateFlag, EMUpdateFlag.Flags.InitMesh))
+            {
+			    InitMesh();
+            }
 			
-			var mesh = Mesh;
-			_updateDrawcalls |= UpdateTransforms();
+			UpdateTransforms();
 			
+            var mesh = Mesh;
 			mesh.vertices = _vertices;
 			mesh.uv = _uv;
 			
-			//if(_updateDrawcalls)
+			if(EMUpdateFlag.Should(_tree.UpdateFlag, EMUpdateFlag.Flags.UpdateDrawCalls))
 			{
 				UpdateDrawcalls();
-				_updateDrawcalls = false;
 			}
+            
+            _tree.UpdateFlag = 0;
 		}
 		
 		private void InitMesh()
 		{
-			_shapeCount = 0;
-
+            ushort shapeCount = 0;
 			var iter = new EMTreeStreamDFSEnumerator(this);
 			while(iter.MoveNext(false))
 			{
 				if(iter.IsShape())
 				{
-					iter.Shape.ShapeIndex = _shapeCount++;
+					iter.Shape.ShapeIndex = shapeCount++;
 				}	
 			}
 			
-			_vertices = new Vector3[_shapeCount * 4];
-			_uv = new Vector2[_shapeCount * 4];
+            if(shapeCount != _shapeCount)
+            {
+                _shapeCount = shapeCount;
+			    _vertices = new Vector3[_shapeCount * 4];
+			    _uv = new Vector2[_shapeCount * 4];
+            }
 		}
 		
 		private void UpdateDrawcalls()
 		{
 			_drawcalls.Clear();
 			_shapeCount = 0;
-			
-			AddDrawcall(ShaderType.Transparent, 0);
-			
+
 			var mask = new List<MaskOperation>();
 			var masked = new List<MaskOperation>();
 			
@@ -243,7 +254,7 @@ namespace LLT
 						
 						if(maskOperation != null)
 						{						
-							AddDrawcall(ShaderType.StencilIncrement, maskOperation.StencilRef);
+							AddDrawcall(ShaderType.StencilIncrement, maskOperation.StencilRef, iter.Root._atlas);
 							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
 						}
 					}
@@ -253,15 +264,15 @@ namespace LLT
 						maskOperation = masked.FindLast(x=>x.Start <= iter.Current.Position && iter.Current.Position < x.End);
 						if(maskOperation != null)
 						{
-							AddDrawcall(ShaderType.Transparent, maskOperation.StencilRef);
+							AddDrawcall(ShaderType.Transparent, maskOperation.StencilRef, iter.Root._atlas);
 							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
 							
 							if(maskOperation.End <= iter.Current.SiblingPosition)
 							{
 								maskOperation = mask[mask.Count - 1];
 									
-								AddDrawcall(ShaderType.StencilDecrement, maskOperation.StencilRef + 1);							
-								AddDrawcall(ShaderType.Transparent, 0);
+								AddDrawcall(ShaderType.StencilDecrement, maskOperation.StencilRef + 1, iter.Root._atlas);							
+								AddDrawcall(ShaderType.Transparent, 0, iter.Root._atlas);
 								
 								masked.Clear();
 								mask.Clear();
@@ -271,6 +282,7 @@ namespace LLT
 					
 					if(maskOperation == null)
 					{
+                        AddDrawcall(ShaderType.Transparent, 0, iter.Root._atlas);
 						_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
 					}
 				}	
@@ -285,17 +297,13 @@ namespace LLT
 			}
 		}
 		
-		private bool UpdateTransforms()
+		private void UpdateTransforms()
 		{
 			var iter = new EMTreeStreamDFSEnumerator(this);
 			iter.Parent.LocalToWorld.MakeIdentity();
 			iter.Parent.LocalToWorld.M11 = -1f;
 			
-			var treePtr = _tree.Pin();
-			var skipSubTree = false;
-			
-			var updateDrawCalls = false;
-			
+			var skipSubTree = false;			
 			while(iter.MoveNext(skipSubTree))
 			{
 				skipSubTree = false;
@@ -306,10 +314,9 @@ namespace LLT
 #else				
 					unsafe
 					{
-						byte* ptr = (byte*)treePtr.ToPointer();
-						EMSpriteStructLayout* p0 = (EMSpriteStructLayout*)(ptr + iter.Parent.Position);
-						EMSpriteStructLayout* p1 = (EMSpriteStructLayout*)(ptr + iter.Sprite.Position);
-						
+						EMSpriteStructLayout* p0 = (EMSpriteStructLayout*)iter.ParentPtr.ToPointer();
+						EMSpriteStructLayout* p1 = (EMSpriteStructLayout*)iter.CurrentPtr.ToPointer();
+                        
 						p1->LocalToWorld.M00 = p0->LocalToWorld.M00 * p1->Transform.M00 + p0->LocalToWorld.M01 * p1->Transform.M10;
 						p1->LocalToWorld.M01 = p0->LocalToWorld.M00 * p1->Transform.M01 + p0->LocalToWorld.M01 * p1->Transform.M11;
 						p1->LocalToWorld.M10 = p0->LocalToWorld.M10 * p1->Transform.M00 + p0->LocalToWorld.M11 * p1->Transform.M10;
@@ -319,13 +326,13 @@ namespace LLT
 						
 						var temp = p1->LocalToWorld.Placed;
 						p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
-						
+                        
 						if(p1->LocalToWorld.Placed == 0 && temp == 0)
 						{
 							skipSubTree = true;
 						}
 						
-						updateDrawCalls |= ((p1->UpdateFlag & 1) > 0);
+						_tree.UpdateFlag |= p1->UpdateFlag;
 						p1->UpdateFlag = 0;
 					}
 #endif
@@ -337,42 +344,43 @@ namespace LLT
 #else
 					unsafe
 					{
-						byte* ptr = (byte*)treePtr.ToPointer();
-						EMSpriteStructLayout* p0 = (EMSpriteStructLayout*)(ptr + iter.Parent.Position);
-						EMShapeStructLayout* p1 = (EMShapeStructLayout*)(ptr + iter.Shape.Position);
-						
-						p1->LocalToWorld.M00 = p0->LocalToWorld.M00 * p1->Transform.M00 + p0->LocalToWorld.M01 * p1->Transform.M10;
-						p1->LocalToWorld.M01 = p0->LocalToWorld.M00 * p1->Transform.M01 + p0->LocalToWorld.M01 * p1->Transform.M11;
-						p1->LocalToWorld.M10 = p0->LocalToWorld.M10 * p1->Transform.M00 + p0->LocalToWorld.M11 * p1->Transform.M10;
-						p1->LocalToWorld.M11 = p0->LocalToWorld.M10 * p1->Transform.M01 + p0->LocalToWorld.M11 * p1->Transform.M11;
-						p1->LocalToWorld.M02 = p0->LocalToWorld.M00 * p1->Transform.M02 + p0->LocalToWorld.M01 * p1->Transform.M12 + p0->LocalToWorld.M02;
-						p1->LocalToWorld.M12 = p0->LocalToWorld.M10 * p1->Transform.M02 + p0->LocalToWorld.M11 * p1->Transform.M12 + p0->LocalToWorld.M12;
-						
+						EMSpriteStructLayout* p0 = (EMSpriteStructLayout*)iter.ParentPtr.ToPointer();
+						EMShapeStructLayout* p1 = (EMShapeStructLayout*)iter.CurrentPtr.ToPointer();
+                        
+                        if(p1->Transform.Placed > 0)
+                        {
+    						p1->LocalToWorld.M00 = p0->LocalToWorld.M00 * p1->Transform.M00 + p0->LocalToWorld.M01 * p1->Transform.M10;
+    						p1->LocalToWorld.M01 = p0->LocalToWorld.M00 * p1->Transform.M01 + p0->LocalToWorld.M01 * p1->Transform.M11;
+    						p1->LocalToWorld.M10 = p0->LocalToWorld.M10 * p1->Transform.M00 + p0->LocalToWorld.M11 * p1->Transform.M10;
+    						p1->LocalToWorld.M11 = p0->LocalToWorld.M10 * p1->Transform.M01 + p0->LocalToWorld.M11 * p1->Transform.M11;
+    						p1->LocalToWorld.M02 = p0->LocalToWorld.M00 * p1->Transform.M02 + p0->LocalToWorld.M01 * p1->Transform.M12 + p0->LocalToWorld.M02;
+    						p1->LocalToWorld.M12 = p0->LocalToWorld.M10 * p1->Transform.M02 + p0->LocalToWorld.M11 * p1->Transform.M12 + p0->LocalToWorld.M12;
+						}
+                        
 						var temp = p1->LocalToWorld.Placed;
 						p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
-						
+                        
 						if(p1->LocalToWorld.Placed == 0 && temp == 0)
 						{
 							skipSubTree = true;
 						}
 						
-						updateDrawCalls |= ((p1->UpdateFlag & 1) > 0);
+						_tree.UpdateFlag |= p1->UpdateFlag;
 						p1->UpdateFlag = 0;
 					}
 #endif
 					if(!skipSubTree)
 					{
-						UpdateGeometry(iter.Shape, treePtr);
+						UpdateGeometry(iter);
 					}
 				}
 			}
-			
-			_tree.Release();
-			return updateDrawCalls;
 		}
 		
-		private void UpdateGeometry(EMShape shape, System.IntPtr treePtr)
+		private void UpdateGeometry(EMTreeStreamDFSEnumerator iter)
 		{
+            CoreAssert.Fatal(iter.IsShape());
+            var shape = iter.Shape;
             int shapeIndex = shape.ShapeIndex;
 			float m00, m01, m10, m11, m02, m12, xmin, ymin, xmax, ymax;
             
@@ -401,7 +409,7 @@ namespace LLT
 	#else
 			unsafe
 			{
-				EMShapeStructLayout* ptr = (EMShapeStructLayout*)((byte*)treePtr.ToPointer() + shape.Position);
+				EMShapeStructLayout* ptr = (EMShapeStructLayout*)iter.CurrentPtr.ToPointer();
 				
 				if(shape.LocalToWorld.Placed == 0)
 				{
@@ -491,21 +499,20 @@ namespace LLT
 			}
 		}
 		
-		private void AddDrawcall(ShaderType shaderType, int stencilRef)
+		private void AddDrawcall(ShaderType shaderType, int stencilRef, Texture texture)
 		{
 			var index = (int)shaderType + (int)ShaderType.Count * stencilRef;
 			if(_sharedMaterials[index] == null)
 			{
 				var material = new Material (Shader.Find("Custom/" + shaderType));
 				material.SetFloat("_Ref", stencilRef);
-				material.mainTexture = _atlas;
 				
 				_sharedMaterials[index] = material;
 			}
 	
-			if(_drawcalls.Count == 0 || _drawcalls[_drawcalls.Count - 1].Material != _sharedMaterials[index])
+			if(_drawcalls.Count == 0 || _drawcalls[_drawcalls.Count - 1].Material != _sharedMaterials[index] || _drawcalls[_drawcalls.Count - 1].Texture != texture)
 			{
-				_drawcalls.Add(new Drawcall(shaderType, _sharedMaterials[index]));
+				_drawcalls.Add(new Drawcall(shaderType, texture, _sharedMaterials[index]));
 			}
 		}
 		
@@ -523,15 +530,42 @@ namespace LLT
     				}
     				else
     				{
+                        _drawcalls[drawcallIndex].Material.mainTexture = _drawcalls[drawcallIndex].Texture;
     					_drawcalls[drawcallIndex].Material.SetPass(0);
+                       
     					Graphics.DrawMeshNow(mesh, mat, drawcallIndex);
     				}
     			}
             }
 		}
 		
+        public IEnumerator<EMTreeStreamDFSEnumerator> Link(EMDisplayTreeStream parent)
+        {
+            CoreAssert.Fatal(_parent == null);
+            _parent = parent;
+            
+            if(!_init.Done)
+            {
+                _init.Stop();
+                _init = CoreTask.Wrap(Init ());
+                
+                while(_init.MoveNext())yield return null;
+            }
+            else
+            {
+                Mesh.Destroy(_mesh);
+                _mesh = null;
+                _vertices = null;
+                _shapeCount = 0;
+            }
+            
+            enabled = false;
+            yield return new EMTreeStreamDFSEnumerator(this);
+        }
+        
 		private void OnDestroy()
 		{
+            _tree.Dispose();
 		}
 	}
 }

@@ -34,7 +34,7 @@ namespace LLT
 				return _shape;
 			}
 		}
-		
+        
 		public EMTreeStreamDFSEnumerator(EMRoot root) : base(root, root.DisplayTree)
 		{
 			_sprite.Init(root.DisplayTree);

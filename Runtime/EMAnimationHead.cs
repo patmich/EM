@@ -8,9 +8,7 @@ namespace LLT
 		[SerializeField]
 		private TextAsset _data;
 		
-		private ITSTreeStream _tree;
 		private TSTreeStreamEntry _entry;
-		
         private readonly List<int> _positions = new List<int>();
 		private EMAnimationTreeStream _animationTree;
 		private EMAnimationClip _animationClip;
@@ -108,7 +106,7 @@ namespace LLT
 #else
 			unsafe
 			{
-				var ptr = _animationTree.Pin();
+				var ptr = _animationTree.Ptr;
 				EMAnimationKeyframeStructLayout keyframe = *(EMAnimationKeyframeStructLayout*)((byte*)ptr.ToPointer() + _keyframesEnumerator.Current.EntryPosition);
 				
 				while(!_keyframesEnumerator.Done && _time >= keyframe.Time)
@@ -132,7 +130,6 @@ namespace LLT
 					
 					keyframe = *(EMAnimationKeyframeStructLayout*)((byte*)ptr.ToPointer() + _keyframesEnumerator.Current.EntryPosition);
 				}
-				_animationTree.Release();
 			}
 #endif
 		}
@@ -178,5 +175,13 @@ namespace LLT
             }
         }
 #endif
+        
+        private void OnDestroy()
+        {
+            if(_animationTree != null)
+            {
+                _animationTree.Dispose();    
+            }
+        }
 	}
 }

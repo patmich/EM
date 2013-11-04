@@ -259,7 +259,7 @@ namespace LLT
 									
 									if(retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f))
 									{
-										retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+										retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
 									}
 								}
 							}
@@ -293,14 +293,14 @@ namespace LLT
 								{
 									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, clipCount))
 									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
 									}
 								}
 								else
 								{
 									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Sample(currentFrame - 1)))
 									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
 									}
 								}
 							}
@@ -320,10 +320,9 @@ namespace LLT
 								
 								if(placeObject2.HasClipDepth())
 								{
-									retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, clipCount);
-									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false))
+									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, clipCount))
 									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
 									}
 								}
 							}
@@ -341,7 +340,7 @@ namespace LLT
 							
 							if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f))
 							{
-								retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, 1f, false);
+								retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
 							}
 						}
 					}
