@@ -198,5 +198,10 @@ namespace LLT
 				return 36;
 			}
 		}
+		
+		public override string ToString ()
+		{
+			return string.Format ("[EMTransform: M00={0}, M01={1}, M02={2}, M10={3}, M11={4}, M12={5}, MA={6}, MR={7}, MG={8}, MB={9}, OA={10}, OR={11}, OG={12}, OB={13}, Placed={14}, SizeOf={15}]", M00, M01, M02, M10, M11, M12, MA, MR, MG, MB, OA, OR, OG, OB, Placed, SizeOf);
+		}
 	}
 }

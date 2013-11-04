@@ -114,10 +114,10 @@ namespace LLT
 		
 		// ToDo need as many shared material multiple as mask depth.
 		private readonly Material[] _sharedMaterials = new Material[(int)ShaderType.Count * 2];
-		
 		private TSTreeStreamSiblingEnumerator _siblingEnumerator;
-	
-		public ITreeStreamQuery<EMObject> DisplayTree
+		private bool _updateDrawcalls;
+		
+		public ITSTreeStream DisplayTree
 		{
 			get
 			{
@@ -140,8 +140,14 @@ namespace LLT
 		
 		private void Awake()
 		{
+			_updateDrawcalls = true;
 			enabled = false;
 			StartCoroutine(Init ());
+		}
+		
+		public EMObject FindObject(params string[] path)
+		{
+			return _tree.FindObject(path);
 		}
 		
 		private IEnumerator Init()
@@ -160,15 +166,18 @@ namespace LLT
 		
 		private void Update()
 		{
+			InitMesh();
+			
 			var mesh = Mesh;
-			bool updateDrawcalls = UpdateTransforms();
+			_updateDrawcalls |= UpdateTransforms();
 			
 			mesh.vertices = _vertices;
 			mesh.uv = _uv;
 			
-			if(updateDrawcalls)
+			//if(_updateDrawcalls)
 			{
 				UpdateDrawcalls();
+				_updateDrawcalls = false;
 			}
 		}
 		
@@ -176,7 +185,7 @@ namespace LLT
 		{
 			_shapeCount = 0;
 
-			var iter = new EMTreeStreamDFSEnumerator(_tree);
+			var iter = new EMTreeStreamDFSEnumerator(this);
 			while(iter.MoveNext(false))
 			{
 				if(iter.IsShape())
@@ -199,11 +208,10 @@ namespace LLT
 			var mask = new List<MaskOperation>();
 			var masked = new List<MaskOperation>();
 			
-			var iter = new EMTreeStreamDFSEnumerator(_tree);
+			var iter = new EMTreeStreamDFSEnumerator(this);
 			while(iter.MoveNext(false))
 			{
 				var clipCount = 0;
-				EMFactory.Type typeIndex = (EMFactory.Type)iter.Current.TypeIndex;
 				if(iter.IsSprite())
 				{
 					clipCount = iter.Sprite.ClipCount;
@@ -279,7 +287,7 @@ namespace LLT
 		
 		private bool UpdateTransforms()
 		{
-			var iter = new EMTreeStreamDFSEnumerator(_tree);
+			var iter = new EMTreeStreamDFSEnumerator(this);
 			iter.Parent.LocalToWorld.MakeIdentity();
 			iter.Parent.LocalToWorld.M11 = -1f;
 			
@@ -294,7 +302,7 @@ namespace LLT
 				if(iter.IsSprite())
 				{	
 #if UNITY_WEB || !ALLOW_UNSAFE
-					_current.LocalToWorld.Concat(iter.Parent.LocalToWorld, iter.Sprite.Transform);
+					iter.Sprite.LocalToWorld.Concat(iter.Parent.LocalToWorld, iter.Sprite.Transform);
 #else				
 					unsafe
 					{
@@ -325,7 +333,7 @@ namespace LLT
 				else if(iter.IsShape())
 				{
 #if UNITY_WEB || !ALLOW_UNSAFE
-					_shape.LocalToWorld.Concat(iter.Parent.LocalToWorld, iter.Shape.Transform);
+					iter.Shape.LocalToWorld.Concat(iter.Parent.LocalToWorld, iter.Shape.Transform);
 #else
 					unsafe
 					{

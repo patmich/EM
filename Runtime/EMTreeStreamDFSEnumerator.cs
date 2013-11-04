@@ -2,7 +2,7 @@ using System;
 
 namespace LLT
 {
-	public sealed class EMTreeStreamDFSEnumerator : TSTreeStreamDFSEnumerator<EMSprite>
+	public sealed class EMTreeStreamDFSEnumerator : TSTreeStreamDFSEnumerator<EMRoot, EMSprite, EMTreeStreamDFSEnumerator>
 	{
 		private EMFactory.Type _currentTypeIndex;
 		private readonly EMShape _shape = new EMShape();
@@ -12,6 +12,11 @@ namespace LLT
 		{
 			get
 			{
+				if(_link)
+				{
+					return _subEnumerator.Sprite;
+				}
+				
 				CoreAssert.Fatal(_currentTypeIndex == EMFactory.Type.EMSprite);
 				return _sprite;
 			}
@@ -20,15 +25,20 @@ namespace LLT
 		{
 			get
 			{
+				if(_link)
+				{
+					return _subEnumerator.Shape;
+				}
+				
 				CoreAssert.Fatal(_currentTypeIndex == EMFactory.Type.EMShape);
 				return _shape;
 			}
 		}
 		
-		public EMTreeStreamDFSEnumerator(ITSTreeStream tree) : base(tree)
+		public EMTreeStreamDFSEnumerator(EMRoot root) : base(root, root.DisplayTree)
 		{
-			_sprite.Init(tree);
-			_shape.Init(tree);
+			_sprite.Init(root.DisplayTree);
+			_shape.Init(root.DisplayTree);
 		}
 		
 		public override bool MoveNext (bool skipSubTree)

@@ -15,8 +15,16 @@ namespace LLT
 		
 		private ITSTreeStream _tree;
 		private TSTreeStreamTag _tag;
+		private EMSprite _sprite;
 		
-		public EMSprite Sprite { private set; get; }
+		public EMSprite Sprite 
+		{
+			get
+			{
+				CoreAssert.Fatal(_sprite != null);
+				return _sprite;
+			}
+		}
 		
 		public EMAnimationHead AnimationHead
 		{
@@ -70,9 +78,9 @@ namespace LLT
 			
 			if((EMFactory.Type)_tag.TypeIndex == EMFactory.Type.EMSprite)
 			{
-				Sprite = new EMSprite();
-				Sprite.Init(_tree);
-				Sprite.Position = _tag.EntryPosition;
+				_sprite = new EMSprite();
+				_sprite.Init(_tree);
+				_sprite.Position = _tag.EntryPosition;
 			}
 		}
         
@@ -86,5 +94,7 @@ namespace LLT
             }
             return false;
         }
+		
+		
 	}
 }

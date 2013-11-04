@@ -22,5 +22,14 @@ namespace LLT
 		{
 			
 		}
+		
+		public void Link(EMRoot root)
+		{
+			var tag = new TSTreeStreamTag(_tree);
+			tag.Position = Position - TSTreeStreamTag.TSTreeStreamTagSizeOf;
+			
+			root.gameObject.SetActive(false); 
+			_tree.Link(tag, new EMTreeStreamDFSEnumerator(root));
+		}
 	}
 }
