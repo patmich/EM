@@ -124,7 +124,7 @@ namespace LLT
 				var defineSprite = root.Value as EMSwfDefineSprite;
 				using (var tree = new EMDisplayTreeStream())
 	            {
-					var positions = tree.InitFromTree(new EMSwfDefineSpriteNode(root.Key, true, EMSwfMatrix.Identity, 0, defineSprite), null, new EMFactory());
+					var positions = tree.InitFromTree(new EMSwfDefineSpriteNode(root.Key, true, EMSwfMatrix.Identity, EMSwfColorTransform.Identity, 0, defineSprite), null, new EMFactory());
 					var atlas = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + "atlas.png");
 					
 					var rootComponent = prefab.GetComponent<EMRoot>();

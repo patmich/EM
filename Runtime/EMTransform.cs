@@ -27,6 +27,14 @@ namespace LLT
 			M10 = 0f;
 			M11 = 1f;
 			M12 = 0f;
+            MA = 255;
+            MR = 255;
+            MG = 255;
+            MB = 255;
+            OA = 0;
+            OR = 0;
+            OG = 0;
+            OB = 0;
 			Placed = (byte)1;
 		}
 		

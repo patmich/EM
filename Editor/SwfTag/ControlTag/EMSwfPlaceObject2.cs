@@ -131,6 +131,11 @@
 	        {
 	            CXform = new EMSwfColorTransform(reader, true);
 	        }
+			else
+			{
+				CXform = EMSwfColorTransform.Identity;
+			}
+			
 	        if (PlaceFlagHasRatio)
 	        {
 	            Ratio = reader.ReadUInt16();

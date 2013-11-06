@@ -5,15 +5,20 @@
 	    private bool _hasAddTerms;
 	    private bool _hasMultTerms;
 	
-	    public uint RedMultTerm { get; private set; }
-	    public uint GreenMultTerm { get; private set; }
-	    public uint BlueMultTerm { get; private set; }
-	    public uint AlphaMultTerm { get; private set; }
-	    public uint RedAddTerm { get; private set; }
-	    public uint GreenAddTerm { get; private set; }
-	    public uint BlueAddTerm { get; private set; }
-	    public uint AlphaAddTerm { get; private set; }
+	    public byte RedMultTerm { get; private set; }
+	    public byte GreenMultTerm { get; private set; }
+	    public byte BlueMultTerm { get; private set; }
+	    public byte AlphaMultTerm { get; private set; }
+	    public byte RedAddTerm { get; private set; }
+	    public byte GreenAddTerm { get; private set; }
+	    public byte BlueAddTerm { get; private set; }
+	    public byte AlphaAddTerm { get; private set; }
 	
+		public EMSwfColorTransform()
+	    {
+			_hasAddTerms = true;
+			_hasMultTerms = true;
+		}
 	    public EMSwfColorTransform(EMSwfBinaryReader reader, bool alpha)
 	    {
 	        reader.Align(true);
@@ -34,13 +39,13 @@
 	        if (_hasAddTerms)
 	        {
 	            var bitCount = (int)reader.ReadBits(4, false);
-	            RedMultTerm = reader.ReadBits(bitCount, true);
-	            GreenMultTerm = reader.ReadBits(bitCount, true);
-	            BlueMultTerm = reader.ReadBits(bitCount, true);
+	            RedMultTerm = (byte)reader.ReadBits(bitCount, true);
+	            GreenMultTerm = (byte)reader.ReadBits(bitCount, true);
+	            BlueMultTerm = (byte)reader.ReadBits(bitCount, true);
 	
 	            if (alpha)
 	            {
-	                AlphaMultTerm = reader.ReadBits(bitCount, true);
+	                AlphaMultTerm = (byte)reader.ReadBits(bitCount, true);
 	            }
 	            else
 	            {
@@ -50,13 +55,13 @@
 	        if (_hasMultTerms)
 	        {
 	            var bitCount = (int)reader.ReadBits(4, false);
-	            RedAddTerm = reader.ReadBits(bitCount, true);
-	            GreenAddTerm = reader.ReadBits(bitCount, true);
-	            BlueAddTerm = reader.ReadBits(bitCount, true);
+	            RedAddTerm = (byte)reader.ReadBits(bitCount, true);
+	            GreenAddTerm = (byte)reader.ReadBits(bitCount, true);
+	            BlueAddTerm = (byte)reader.ReadBits(bitCount, true);
 	
 	            if (alpha)
 	            {
-	                AlphaAddTerm = reader.ReadBits(bitCount, true);
+	                AlphaAddTerm = (byte)reader.ReadBits(bitCount, true);
 	            }
 	            else
 	            {
@@ -66,5 +71,13 @@
 	
 	        reader.Align(false);
 	    }
+		
+		public static EMSwfColorTransform Identity
+		{
+			get
+			{
+				return new EMSwfColorTransform(){RedMultTerm = 255, BlueMultTerm = 255, GreenMultTerm = 255, AlphaMultTerm = 255};
+			}
+		}
 	}
 }

@@ -110,6 +110,9 @@ namespace LLT
 		private Vector3[] _vertices;
 		private Vector2[] _uv;
 	
+        private Color32[] _colorAdd;
+        private Vector4[] _colorMult;
+        
 		private readonly List<Drawcall> _drawcalls = new List<Drawcall>();
 		private ushort _shapeCount;
 		
@@ -183,7 +186,9 @@ namespace LLT
             var mesh = Mesh;
 			mesh.vertices = _vertices;
 			mesh.uv = _uv;
-			
+		    mesh.tangents = _colorMult;
+            mesh.colors32 = _colorAdd;
+            
 			if(EMUpdateFlag.Should(_tree.UpdateFlag, EMUpdateFlag.Flags.UpdateDrawCalls))
 			{
 				UpdateDrawcalls();
@@ -212,6 +217,8 @@ namespace LLT
                 _shapeCount = shapeCount;
 			    _vertices = new Vector3[_shapeCount * 4];
 			    _uv = new Vector2[_shapeCount * 4];
+                _colorAdd = new Color32[_shapeCount * 4];
+                _colorMult = new Vector4[_shapeCount * 4];
             }
 		}
 		
@@ -305,7 +312,7 @@ namespace LLT
 		
 		private void UpdateTransforms()
 		{
-			var iter = new EMDisplayTreeStreamDFSEnumerator(this);
+			var iter = _tree.Iter as EMDisplayTreeStreamDFSEnumerator;
 			iter.Reset();
 
 			iter.Sprite.LocalToWorld.MakeIdentity();
@@ -332,6 +339,16 @@ namespace LLT
 						p1->LocalToWorld.M02 = p0->LocalToWorld.M00 * p1->Transform.M02 + p0->LocalToWorld.M01 * p1->Transform.M12 + p0->LocalToWorld.M02;
 						p1->LocalToWorld.M12 = p0->LocalToWorld.M10 * p1->Transform.M02 + p0->LocalToWorld.M11 * p1->Transform.M12 + p0->LocalToWorld.M12;
 						
+                        p1->LocalToWorld.MA = (byte)(p0->LocalToWorld.MA * p1->Transform.MA);
+                        p1->LocalToWorld.MR = (byte)(p0->LocalToWorld.MR * p1->Transform.MR);
+                        p1->LocalToWorld.MG = (byte)(p0->LocalToWorld.MG * p1->Transform.MG);
+                        p1->LocalToWorld.MB = (byte)(p0->LocalToWorld.MB * p1->Transform.MB);
+                        
+                        p1->LocalToWorld.OA = (byte)(p0->LocalToWorld.OA + p1->Transform.OA);
+                        p1->LocalToWorld.OR = (byte)(p0->LocalToWorld.OR + p1->Transform.OR);
+                        p1->LocalToWorld.OG = (byte)(p0->LocalToWorld.OG + p1->Transform.OG);
+                        p1->LocalToWorld.OB = (byte)(p0->LocalToWorld.OB + p1->Transform.OB);
+                        
 						var temp = p1->LocalToWorld.Placed;
 						p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
                         
@@ -365,6 +382,16 @@ namespace LLT
     						p1->LocalToWorld.M02 = p0->LocalToWorld.M00 * p1->Transform.M02 + p0->LocalToWorld.M01 * p1->Transform.M12 + p0->LocalToWorld.M02;
     						p1->LocalToWorld.M12 = p0->LocalToWorld.M10 * p1->Transform.M02 + p0->LocalToWorld.M11 * p1->Transform.M12 + p0->LocalToWorld.M12;
 							
+                            p1->LocalToWorld.MA = (byte)(p0->LocalToWorld.MA * p1->Transform.MA);
+                            p1->LocalToWorld.MR = (byte)(p0->LocalToWorld.MR * p1->Transform.MR);
+                            p1->LocalToWorld.MG = (byte)(p0->LocalToWorld.MG * p1->Transform.MG);
+                            p1->LocalToWorld.MB = (byte)(p0->LocalToWorld.MB * p1->Transform.MB);
+                            
+                            p1->LocalToWorld.OA = (byte)(p0->LocalToWorld.OA + p1->Transform.OA);
+                            p1->LocalToWorld.OR = (byte)(p0->LocalToWorld.OR + p1->Transform.OR);
+                            p1->LocalToWorld.OG = (byte)(p0->LocalToWorld.OG + p1->Transform.OG);
+                            p1->LocalToWorld.OB = (byte)(p0->LocalToWorld.OB + p1->Transform.OB);
+                            
 							p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
 						}
                         else
@@ -395,6 +422,9 @@ namespace LLT
             var shape = iter.Shape;
             int shapeIndex = shape.ShapeIndex;
 			float m00, m01, m10, m11, m02, m12, xmin, ymin, xmax, ymax;
+            
+            Color32 colorAdd;
+            Vector4 colorMult;
             
 	#if UNITY_WEB || !ALLOW_UNSAFE		
 			if(shape.LocalToWorld.Placed == 0)
@@ -446,6 +476,9 @@ namespace LLT
 				ymin = ptr->Rect.Y;
 				xmax = ptr->Rect.X + ptr->Rect.Width;
 				ymax = ptr->Rect.Y + ptr->Rect.Height;
+                
+                colorAdd = new Color32(ptr->LocalToWorld.OR, ptr->LocalToWorld.OG, ptr->LocalToWorld.OB, ptr->LocalToWorld.OA);
+                colorMult = new Vector4(ptr->LocalToWorld.MR/255f, ptr->LocalToWorld.MG/255f, ptr->LocalToWorld.MB/255f, ptr->LocalToWorld.MA/255f);
 			}
 	#endif
 			
@@ -511,6 +544,16 @@ namespace LLT
 				_uv[shapeIndex * 4 + 3].x = xmax;
 				_uv[shapeIndex * 4 + 3].y = ymax;
 			}
+            
+            _colorAdd[shapeIndex * 4 + 0] = colorAdd;
+            _colorAdd[shapeIndex * 4 + 1] = colorAdd;
+            _colorAdd[shapeIndex * 4 + 2] = colorAdd;
+            _colorAdd[shapeIndex * 4 + 3] = colorAdd;
+            
+            _colorMult[shapeIndex * 4 + 0] = colorMult;
+            _colorMult[shapeIndex * 4 + 1] = colorMult;
+            _colorMult[shapeIndex * 4 + 2] = colorMult;
+            _colorMult[shapeIndex * 4 + 3] = colorMult;
 		}
 		
 		private void AddDrawcall(ShaderType shaderType, int stencilRef, Texture texture)

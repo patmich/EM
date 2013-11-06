@@ -28,25 +28,40 @@
 			float4 _Color;
 			sampler2D _MainTex;
 			
+			struct appdata
+			{
+				float4 vertex : POSITION;
+				float2 texcoord : TEXCOORD0;	
+				fixed4 color : COLOR;	
+				float4 tangent : TANGENT;
+			};
+			
 			struct v2f 
 			{
-			    float4  pos : SV_POSITION;
-			    float2  uv : TEXCOORD0;
+			    float4 pos : SV_POSITION;
+			    float2 uv : TEXCOORD0;
+			    fixed4 add : COLOR0;
+			    fixed4 mult : COLOR1;
 			};
 			
 			float4 _MainTex_ST;
 			
-			v2f vert (appdata_base v)
+			v2f vert (appdata v)
 			{
 			    v2f o;
+			    
 			    o.pos = mul (UNITY_MATRIX_MVP, v.vertex);
 			    o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
+			    o.add = v.color;
+			    o.mult = v.tangent;
+			    
 			    return o;
 			}
 			
 			float4 frag (v2f i) : COLOR
 			{
-			    return tex2D (_MainTex, i.uv);
+				//return tex2D (_MainTex, i.uv);
+			    return i.mult * tex2D (_MainTex, i.uv) + i.add;
 			}
 			ENDCG
 		}
