@@ -113,7 +113,7 @@ namespace LLT
 					return iter.Shape.Bounds;
 				}
 				
-				var retVal = new Bounds(Vector3.zero, Vector3.zero);
+				Bounds retVal = new Bounds(Vector3.zero, Vector3.zero);
 				var skipSubTree = false;
 				while(iter.MoveNext(skipSubTree))
 				{
@@ -124,7 +124,14 @@ namespace LLT
 						var bounds = iter.Shape.Bounds;
 						if(bounds.size != Vector3.zero)
 						{
-							retVal.Encapsulate(iter.Shape.Bounds);
+                            if(retVal.size == Vector3.zero)
+                            {
+                                retVal = bounds;
+                            }
+                            else
+                            {
+							    retVal.Encapsulate(bounds);
+                            }
 						}
 					}
 					else if(iter.Sprite.LocalToWorld.Placed == 0)
@@ -133,6 +140,8 @@ namespace LLT
 					}
 				}
 				
+                retVal.min = _tree.Root.transform.localToWorldMatrix.MultiplyPoint(retVal.min);
+                retVal.max = _tree.Root.transform.localToWorldMatrix.MultiplyPoint(retVal.max);
 				return retVal;
 			}
 		}

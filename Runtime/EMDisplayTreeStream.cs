@@ -12,11 +12,14 @@ namespace LLT
 		[SerializeField]
 		private List<EMObject> _objects = new List<EMObject>();
         public byte UpdateFlag { get; set; }
-
+  
+        public EMRoot Root { get; private set; }
+        
 		public void Init(EMRoot root, byte[] buffer)
 		{
+            Root = root;
 			InitFromBytes(buffer, null, new EMFactory());
-			_iter = new EMDisplayTreeStreamDFSEnumerator(root);
+			_iter = new EMDisplayTreeStreamDFSEnumerator(Root);
 		}
 		
 		protected override List<EMObject> Objects

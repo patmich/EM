@@ -108,6 +108,7 @@ namespace LLT
         private IEnumerator Wait(string label)
         {
             while(!_loop && _label == label && _time < _animationClip.Length)yield return null;
+            _wait.Remove(_label);
         }
        
 		private void Update()
@@ -115,7 +116,7 @@ namespace LLT
 			CoreAssert.Fatal(_object.Sprite != null);
 			if(_object.Sprite.LocalToWorld.Placed == 0)
 			{
-				return;
+				//return;
 			}
 			if(_animationClip == null)
 			{

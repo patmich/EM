@@ -24,10 +24,16 @@ namespace LLT
 			
 		}
 		
-		public IEnumerator Link(EMRoot root)
+		public IEnumerator Link(EMResource resource)
 		{
             var displayTree = _tree as EMDisplayTreeStream;
-            var link = root.Link(displayTree);
+            
+            resource.transform.parent = displayTree.Root.transform;
+            resource.transform.localPosition = Vector3.zero;
+            resource.transform.localRotation = Quaternion.identity;
+            resource.transform.localScale = Vector3.one;
+                
+            var link = resource.Root.Link(displayTree);
             while(link.MoveNext())yield return null;
             
             displayTree.UpdateFlag |= EMUpdateFlag.Flag(EMUpdateFlag.Flags.InitMesh, EMUpdateFlag.Flags.UpdateDrawCalls);
