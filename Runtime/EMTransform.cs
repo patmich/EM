@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace LLT
 {
 	[TSLayout(typeof(float), "M00", 0)]
@@ -37,7 +39,6 @@ namespace LLT
 			M02 = localToWorld.M00 * transform.M02 + localToWorld.M01 * transform.M12 + localToWorld.M02;
 			M12 = localToWorld.M10 * transform.M02 + localToWorld.M11 * transform.M12 + localToWorld.M12;
 			Placed = (byte)(localToWorld.Placed & transform.Placed);
-		
 		}
 	}
 }

@@ -4,29 +4,46 @@ using System.Collections;
 
 namespace LLT
 {
-	[ExecuteInEditMode]
 	public sealed class EMResource : MonoBehaviour
 	{
 		[SerializeField]
 		private GameObject _prefab;
 		private GameObject _instance;
-
-		private IEnumerator Start()
+        private EMRoot _root;
+        
+        public EMRoot Root
+        {
+            get
+            {
+                return _root;
+            }
+        }
+        
+		private void Awake()
 		{
-			while(_prefab == null)yield return null;
-			
+            CoreAssert.Fatal(_prefab != null);
+            
 			_instance = GameObject.Instantiate(_prefab, Vector3.zero, Quaternion.identity) as GameObject;
-			_instance.hideFlags = HideFlags.DontSave;
-			
 			_instance.transform.parent = transform;
 			_instance.transform.localPosition = Vector3.zero;
 			_instance.transform.localScale = Vector3.one;
+            
+            _root = _instance.GetComponent<EMRoot>();
 		}
-		
-		private void OnDestroy()
-		{
-			GameObject.DestroyImmediate(_instance, true);
-		}
+        
+        public static EMResource Load(string path)
+        {
+            var prefab = Resources.Load(path);
+            CoreAssert.Fatal(prefab != null);
+            
+            var go = Instantiate(prefab) as GameObject;
+            CoreAssert.Fatal(go != null);
+            
+            var resource = go.GetComponent<EMResource>();
+            CoreAssert.Fatal(resource != null);
+            
+            return resource;
+        }
 	}
 }
 

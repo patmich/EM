@@ -103,7 +103,7 @@ namespace LLT
 		private Texture2D _atlas;
 		
 		[SerializeField]
-		private EMDisplayTreeStream _tree = new EMDisplayTreeStream();
+		private EMDisplayTreeStream _tree;
 
 		private Mesh _mesh;
 		
@@ -165,8 +165,9 @@ namespace LLT
 				yield return null;
 			}
 			
-			_tree.InitFromBytes(_bytes.bytes, null, new EMFactory());
+			_tree.Init(this, _bytes.bytes);
 			_siblingEnumerator = new TSTreeStreamSiblingEnumerator(_tree);
+			
 			enabled = true;
 		}
 		
@@ -194,10 +195,13 @@ namespace LLT
 		private void InitMesh()
 		{
             ushort shapeCount = 0;
-			var iter = new EMTreeStreamDFSEnumerator(this);
+			
+			var iter = _tree.Iter as EMDisplayTreeStreamDFSEnumerator;
+			iter.Reset();
+			
 			while(iter.MoveNext(false))
 			{
-				if(iter.IsShape())
+				if(iter.IsShape()) 
 				{
 					iter.Shape.ShapeIndex = shapeCount++;
 				}	
@@ -219,7 +223,9 @@ namespace LLT
 			var mask = new List<MaskOperation>();
 			var masked = new List<MaskOperation>();
 			
-			var iter = new EMTreeStreamDFSEnumerator(this);
+			var iter = _tree.Iter as EMDisplayTreeStreamDFSEnumerator;
+			iter.Reset();
+			
 			while(iter.MoveNext(false))
 			{
 				var clipCount = 0;
@@ -299,12 +305,14 @@ namespace LLT
 		
 		private void UpdateTransforms()
 		{
-			var iter = new EMTreeStreamDFSEnumerator(this);
-			iter.Parent.LocalToWorld.MakeIdentity();
-			iter.Parent.LocalToWorld.M11 = -1f;
+			var iter = new EMDisplayTreeStreamDFSEnumerator(this);
+			iter.Reset();
+
+			iter.Sprite.LocalToWorld.MakeIdentity();
+			iter.Sprite.LocalToWorld.M11 = -1f;
 			
 			var skipSubTree = false;			
-			while(iter.MoveNext(skipSubTree))
+			while(iter.MoveNext(false))
 			{
 				skipSubTree = false;
 				if(iter.IsSprite())
@@ -344,22 +352,26 @@ namespace LLT
 #else
 					unsafe
 					{
-						EMSpriteStructLayout* p0 = (EMSpriteStructLayout*)iter.ParentPtr.ToPointer();
 						EMShapeStructLayout* p1 = (EMShapeStructLayout*)iter.CurrentPtr.ToPointer();
-                        
+                        var temp = p1->LocalToWorld.Placed;
+						
                         if(p1->Transform.Placed > 0)
                         {
+							EMSpriteStructLayout* p0 = (EMSpriteStructLayout*)iter.ParentPtr.ToPointer();
     						p1->LocalToWorld.M00 = p0->LocalToWorld.M00 * p1->Transform.M00 + p0->LocalToWorld.M01 * p1->Transform.M10;
     						p1->LocalToWorld.M01 = p0->LocalToWorld.M00 * p1->Transform.M01 + p0->LocalToWorld.M01 * p1->Transform.M11;
     						p1->LocalToWorld.M10 = p0->LocalToWorld.M10 * p1->Transform.M00 + p0->LocalToWorld.M11 * p1->Transform.M10;
     						p1->LocalToWorld.M11 = p0->LocalToWorld.M10 * p1->Transform.M01 + p0->LocalToWorld.M11 * p1->Transform.M11;
     						p1->LocalToWorld.M02 = p0->LocalToWorld.M00 * p1->Transform.M02 + p0->LocalToWorld.M01 * p1->Transform.M12 + p0->LocalToWorld.M02;
     						p1->LocalToWorld.M12 = p0->LocalToWorld.M10 * p1->Transform.M02 + p0->LocalToWorld.M11 * p1->Transform.M12 + p0->LocalToWorld.M12;
+							
+							p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
 						}
-                        
-						var temp = p1->LocalToWorld.Placed;
-						p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
-                        
+                        else
+						{
+							p1->LocalToWorld.Placed = 0;
+						}
+						
 						if(p1->LocalToWorld.Placed == 0 && temp == 0)
 						{
 							skipSubTree = true;
@@ -377,7 +389,7 @@ namespace LLT
 			}
 		}
 		
-		private void UpdateGeometry(EMTreeStreamDFSEnumerator iter)
+		private void UpdateGeometry(EMDisplayTreeStreamDFSEnumerator iter)
 		{
             CoreAssert.Fatal(iter.IsShape());
             var shape = iter.Shape;
@@ -399,6 +411,7 @@ namespace LLT
 				m10 = shape.LocalToWorld.M10;
 				m11 = shape.LocalToWorld.M11;
 			}
+			
 			m02 = shape.LocalToWorld.M02;
 			m12 = shape.LocalToWorld.M12;
 			
@@ -411,7 +424,7 @@ namespace LLT
 			{
 				EMShapeStructLayout* ptr = (EMShapeStructLayout*)iter.CurrentPtr.ToPointer();
 				
-				if(shape.LocalToWorld.Placed == 0)
+				if(ptr->LocalToWorld.Placed == 0)
 				{
 					m00 = 0f;
 					m01 = 0f;
@@ -425,6 +438,7 @@ namespace LLT
 					m10 = ptr->LocalToWorld.M10;
 					m11 = ptr->LocalToWorld.M11;
 				}
+
 				m02 = ptr->LocalToWorld.M02;
 				m12 = ptr->LocalToWorld.M12;
 				
@@ -539,7 +553,7 @@ namespace LLT
             }
 		}
 		
-        public IEnumerator<EMTreeStreamDFSEnumerator> Link(EMDisplayTreeStream parent)
+        public IEnumerator<EMDisplayTreeStreamDFSEnumerator> Link(EMDisplayTreeStream parent)
         {
             CoreAssert.Fatal(_parent == null);
             _parent = parent;
@@ -560,7 +574,7 @@ namespace LLT
             }
             
             enabled = false;
-            yield return new EMTreeStreamDFSEnumerator(this);
+            yield return new EMDisplayTreeStreamDFSEnumerator(this);
         }
         
 		private void OnDestroy()

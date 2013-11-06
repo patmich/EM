@@ -17,7 +17,7 @@ namespace LLT
 	        {
 	            get
 	            {
-					return string.Format("{0}-{1}", _name, _firstFrame);
+					return _name;
 	            }
 	        }
 			

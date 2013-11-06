@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 namespace LLT
 {
@@ -16,10 +17,10 @@ namespace LLT
   
         private string _label;
         private float _realTimeSinceStartup;
-        
-        [SerializeField]
+       
         private bool _loop = true;
-         
+        private Dictionary<string, IEnumerator> _wait;
+        
 #if !ALLOW_UNSAFE
 #else
 		private TSTreeStreamSiblingEnumerator _keyframeValuesEnumerator;
@@ -45,7 +46,7 @@ namespace LLT
 			}
 			
 			_animationTree = new EMAnimationTreeStream();
-			_animationTree.InitFromBytes(_data.bytes, null, new EMFactory());
+			_animationTree.Init(_data.bytes);
 			
 			var clipEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
 			clipEnumerator.Init(_animationTree.RootTag);
@@ -56,26 +57,59 @@ namespace LLT
             _keyframesEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
             
 			GotoAndPlay(_animationTree.GetName(clipEnumerator.Current));
-			
+
 #if !ALLOW_UNSAFE
 #else			
 			_keyframeValuesEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
 #endif
 		}
 		
-		public void GotoAndPlay(string label)
+        public void GotoAndPlay(string label)
+        {
+            GotoAndPlay(label, true);
+        }
+        
+        public void GotoAndPlay(string label, bool loop)
+        {
+            var tag = _animationTree.FindTag(label);
+			if(tag != null)
+			{
+				_label = label;
+				
+	            _animationClip.Position = tag.EntryPosition;
+	            
+	            _keyframesEnumerator.Init(tag);
+	            enabled = _keyframesEnumerator.MoveNext();
+	           
+	            _loop = loop;
+	            _time = 0f;
+			}
+        }
+        
+		public IEnumerator GotoAndPlayWait(string label)
 		{
-			_label = label;
+            if(_wait == null)
+            {
+                _wait = new Dictionary<string, IEnumerator>();
+            }
             
-			var tag = _animationTree.FindTag(_label);
-			_animationClip.Position = tag.EntryPosition;
-			
-			_keyframesEnumerator.Init(tag);
-			enabled = _keyframesEnumerator.MoveNext();
-			
-			_time = 0f;
+            GotoAndPlay(label, false);
+            
+            IEnumerator wait = null;
+            if(!_wait.TryGetValue(_label, out wait))
+            {
+                wait = Wait (_label);
+                _wait.Add(_label, wait);
+            }
+            
+            return wait;
 		}
 		
+        private IEnumerator Wait(string label)
+        {
+            while(!_loop && _label == label && _time < _animationClip.Length)yield return null;
+        }
+       
 		private void Update()
 		{
 			CoreAssert.Fatal(_object.Sprite != null);

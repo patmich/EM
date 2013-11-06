@@ -37,5 +37,14 @@ namespace LLT
             
 			_tree.Link(tag, link.Current);
 		}
+		
+				
+		public Vector2 Pos
+		{
+			get
+			{
+				return new Vector2(LocalToWorld.M02, LocalToWorld.M12);
+			}
+		}
 	}
 }
