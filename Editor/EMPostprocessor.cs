@@ -22,6 +22,7 @@ namespace LLT
 				var dependencyCheck = EMSettings.Instance.DependencyCheck();
 				if(dependencyCheck.MoveNext())
 				{
+					Debug.Log(dependencyCheck.Current);
 					return;
 				}
 			}

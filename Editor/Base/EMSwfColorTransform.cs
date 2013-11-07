@@ -36,7 +36,7 @@
 	        BlueAddTerm = 0;
 	        AlphaAddTerm = 0;
 	
-	        if (_hasAddTerms)
+	        if (_hasMultTerms)
 	        {
 	            var bitCount = (int)reader.ReadBits(4, false);
 	            RedMultTerm = (byte)reader.ReadBits(bitCount, true);
@@ -52,7 +52,7 @@
 	                AlphaMultTerm = 0;
 	            }
 	        }
-	        if (_hasMultTerms)
+	        if (_hasAddTerms)
 	        {
 	            var bitCount = (int)reader.ReadBits(4, false);
 	            RedAddTerm = (byte)reader.ReadBits(bitCount, true);
@@ -78,6 +78,11 @@
 			{
 				return new EMSwfColorTransform(){RedMultTerm = 255, BlueMultTerm = 255, GreenMultTerm = 255, AlphaMultTerm = 255};
 			}
+		}
+		
+		public override string ToString ()
+		{
+			return string.Format ("[EMSwfColorTransform: RedMultTerm={0}, GreenMultTerm={1}, BlueMultTerm={2}, AlphaMultTerm={3}, RedAddTerm={4}, GreenAddTerm={5}, BlueAddTerm={6}, AlphaAddTerm={7}]", RedMultTerm, GreenMultTerm, BlueMultTerm, AlphaMultTerm, RedAddTerm, GreenAddTerm, BlueAddTerm, AlphaAddTerm);
 		}
 	}
 }

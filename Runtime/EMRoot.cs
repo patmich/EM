@@ -22,6 +22,7 @@ namespace LLT
 			public Material Material { private set; get; }
 			public ShaderType ShaderType { private set; get; }
 			public Texture Texture { private set; get; }
+			
 			public int[] Indices
 			{
 				get
@@ -339,15 +340,15 @@ namespace LLT
 						p1->LocalToWorld.M02 = p0->LocalToWorld.M00 * p1->Transform.M02 + p0->LocalToWorld.M01 * p1->Transform.M12 + p0->LocalToWorld.M02;
 						p1->LocalToWorld.M12 = p0->LocalToWorld.M10 * p1->Transform.M02 + p0->LocalToWorld.M11 * p1->Transform.M12 + p0->LocalToWorld.M12;
 						
-                        p1->LocalToWorld.MA = (byte)(p0->LocalToWorld.MA * p1->Transform.MA);
-                        p1->LocalToWorld.MR = (byte)(p0->LocalToWorld.MR * p1->Transform.MR);
-                        p1->LocalToWorld.MG = (byte)(p0->LocalToWorld.MG * p1->Transform.MG);
-                        p1->LocalToWorld.MB = (byte)(p0->LocalToWorld.MB * p1->Transform.MB);
+                        p1->LocalToWorld.MA = (byte)Mathf.Clamp(p0->LocalToWorld.MA * p1->Transform.MA, 0, byte.MaxValue);
+                        p1->LocalToWorld.MR = (byte)Mathf.Clamp(p0->LocalToWorld.MR * p1->Transform.MR, 0, byte.MaxValue);
+                        p1->LocalToWorld.MG = (byte)Mathf.Clamp(p0->LocalToWorld.MG * p1->Transform.MG, 0, byte.MaxValue);
+                        p1->LocalToWorld.MB = (byte)Mathf.Clamp(p0->LocalToWorld.MB * p1->Transform.MB, 0, byte.MaxValue);
                         
-                        p1->LocalToWorld.OA = (byte)(p0->LocalToWorld.OA + p1->Transform.OA);
-                        p1->LocalToWorld.OR = (byte)(p0->LocalToWorld.OR + p1->Transform.OR);
-                        p1->LocalToWorld.OG = (byte)(p0->LocalToWorld.OG + p1->Transform.OG);
-                        p1->LocalToWorld.OB = (byte)(p0->LocalToWorld.OB + p1->Transform.OB);
+                        p1->LocalToWorld.OA = (byte)Mathf.Clamp(p0->LocalToWorld.OA + p1->Transform.OA, 0, byte.MaxValue);
+                        p1->LocalToWorld.OR = (byte)Mathf.Clamp(p0->LocalToWorld.OR + p1->Transform.OR, 0, byte.MaxValue);
+                        p1->LocalToWorld.OG = (byte)Mathf.Clamp(p0->LocalToWorld.OG + p1->Transform.OG, 0, byte.MaxValue);
+                        p1->LocalToWorld.OB = (byte)Mathf.Clamp(p0->LocalToWorld.OB + p1->Transform.OB, 0, byte.MaxValue);
                         
 						var temp = p1->LocalToWorld.Placed;
 						p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
@@ -382,15 +383,15 @@ namespace LLT
     						p1->LocalToWorld.M02 = p0->LocalToWorld.M00 * p1->Transform.M02 + p0->LocalToWorld.M01 * p1->Transform.M12 + p0->LocalToWorld.M02;
     						p1->LocalToWorld.M12 = p0->LocalToWorld.M10 * p1->Transform.M02 + p0->LocalToWorld.M11 * p1->Transform.M12 + p0->LocalToWorld.M12;
 							
-                            p1->LocalToWorld.MA = (byte)(p0->LocalToWorld.MA * p1->Transform.MA);
-                            p1->LocalToWorld.MR = (byte)(p0->LocalToWorld.MR * p1->Transform.MR);
-                            p1->LocalToWorld.MG = (byte)(p0->LocalToWorld.MG * p1->Transform.MG);
-                            p1->LocalToWorld.MB = (byte)(p0->LocalToWorld.MB * p1->Transform.MB);
+                            p1->LocalToWorld.MA = (byte)Mathf.Clamp(p0->LocalToWorld.MA * p1->Transform.MA, 0, byte.MaxValue);
+                            p1->LocalToWorld.MR = (byte)Mathf.Clamp(p0->LocalToWorld.MR * p1->Transform.MR, 0, byte.MaxValue);
+                            p1->LocalToWorld.MG = (byte)Mathf.Clamp(p0->LocalToWorld.MG * p1->Transform.MG, 0, byte.MaxValue);
+                            p1->LocalToWorld.MB = (byte)Mathf.Clamp(p0->LocalToWorld.MB * p1->Transform.MB, 0, byte.MaxValue);
                             
-                            p1->LocalToWorld.OA = (byte)(p0->LocalToWorld.OA + p1->Transform.OA);
-                            p1->LocalToWorld.OR = (byte)(p0->LocalToWorld.OR + p1->Transform.OR);
-                            p1->LocalToWorld.OG = (byte)(p0->LocalToWorld.OG + p1->Transform.OG);
-                            p1->LocalToWorld.OB = (byte)(p0->LocalToWorld.OB + p1->Transform.OB);
+                            p1->LocalToWorld.OA = (byte)Mathf.Clamp(p0->LocalToWorld.OA + p1->Transform.OA, 0, byte.MaxValue);
+                            p1->LocalToWorld.OR = (byte)Mathf.Clamp(p0->LocalToWorld.OR + p1->Transform.OR, 0, byte.MaxValue);
+                            p1->LocalToWorld.OG = (byte)Mathf.Clamp(p0->LocalToWorld.OG + p1->Transform.OG, 0, byte.MaxValue);
+                            p1->LocalToWorld.OB = (byte)Mathf.Clamp(p0->LocalToWorld.OB + p1->Transform.OB, 0, byte.MaxValue);
                             
 							p1->LocalToWorld.Placed = (byte)(p0->LocalToWorld.Placed & p1->Transform.Placed);
 						}
@@ -550,6 +551,7 @@ namespace LLT
             _colorAdd[shapeIndex * 4 + 2] = colorAdd;
             _colorAdd[shapeIndex * 4 + 3] = colorAdd;
             
+			
             _colorMult[shapeIndex * 4 + 0] = colorMult;
             _colorMult[shapeIndex * 4 + 1] = colorMult;
             _colorMult[shapeIndex * 4 + 2] = colorMult;
