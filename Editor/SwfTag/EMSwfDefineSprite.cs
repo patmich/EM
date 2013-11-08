@@ -235,10 +235,10 @@ namespace LLT
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_M02_Offset))].Add(0, 0f);
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_M12_Offset))].Add(0, 0f);
 					
-					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_MA_Offset), TSPropertyType._byte)].Add(0, 1f);
-					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_MR_Offset), TSPropertyType._byte)].Add(0, 1f);
-					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_MG_Offset), TSPropertyType._byte)].Add(0, 1f);
-					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_MB_Offset), TSPropertyType._byte)].Add(0, 1f);
+					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_MA_Offset), TSPropertyType._byte)].Add(0, 255);
+					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_MR_Offset), TSPropertyType._byte)].Add(0, 255);
+					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_MG_Offset), TSPropertyType._byte)].Add(0, 255);
+					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_MB_Offset), TSPropertyType._byte)].Add(0, 255);
 					
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_OA_Offset), TSPropertyType._byte)].Add(0, 0f);
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_OR_Offset), TSPropertyType._byte)].Add(0, 0f);

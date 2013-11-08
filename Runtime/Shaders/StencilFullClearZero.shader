@@ -1,4 +1,4 @@
-﻿Shader "Custom/StencilFullClearZero" 
+﻿Shader "LLT/StencilFullClearZero" 
 {
 	SubShader 
 	{ 

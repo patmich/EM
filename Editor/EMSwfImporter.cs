@@ -89,18 +89,24 @@ namespace LLT
 			// Create text asset and wait for reference to exist.
 			foreach (var sprite in GetObjects<EMSwfDefineSprite>())
 			{
-				using (var tree = new EMAnimationTreeStream())
-	            {
-					sprite.Expand();
-					tree.InitFromTree(new EMSwfAnimation(header.FrameRate, sprite), null, new EMFactory());
-					tree.WriteAllBytes(_destinationFolder + sprite.Id + ".anim.bytes");
+				sprite.Expand();
+				if(sprite.AnimationCurves.Count > 0)
+				{
+					using (var tree = new EMAnimationTreeStream())
+		            {
+						tree.InitFromTree(new EMSwfAnimation(header.FrameRate, sprite), null, new EMFactory());
+						tree.WriteAllBytes(_destinationFolder + sprite.Id + ".anim.bytes");
+					}
 				}
 			}
 			UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
 			foreach (var sprite in GetObjects<EMSwfDefineSprite>())
 			{
-				var wait = WaitAsset(_destinationFolder + sprite.Id + ".anim.bytes");
-				while(wait.MoveNext())yield return null;
+				if(sprite.AnimationCurves.Count > 0)
+				{
+					var wait = WaitAsset(_destinationFolder + sprite.Id + ".anim.bytes");
+					while(wait.MoveNext())yield return null;
+				}
 			}
 			
 			foreach (var root in _classes)
@@ -142,9 +148,9 @@ namespace LLT
 					for(var i = 0; i < positions.Count; i++)
 					{
 						var spriteNode = positions[i].Key as EMSwfDefineSpriteNode;
-						if(spriteNode != null)
+						if(spriteNode != null && GetObject<EMSwfDefineSprite>((ushort)spriteNode.Id).AnimationCurves.Count > 0)
 						{
-							var obj = tree.GetObject(positions[i].Value);
+							var obj = tree.GetObject(tree.CreateTag(positions[i].Value));
 							
 							var animTextAsset = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + spriteNode.Id + ".anim.bytes");
 							var animationHead = prefab.AddComponent<EMAnimationHead>();
@@ -280,6 +286,22 @@ namespace LLT
 				UnityEngine.Debug.Log(process.StandardOutput.ReadToEnd());
 			}
 	
+			foreach(var file in Directory.GetFiles(_temporaryFolder, "*.png", SearchOption.AllDirectories).Where(x=>!x.Contains("-info")))
+			{
+				var original = CoreTexture2D.PngDecoder.Invoke(file);
+				var info = CoreTexture2D.PngDecoder.Invoke(Path.GetDirectoryName(file) + "/" + Path.GetFileNameWithoutExtension(file) + "-info.png");
+				
+				for(var i = 0; i < original.ARGB.Length; i++)
+				{
+					if((original.ARGB[i] >> 24) == 0)
+					{
+						original.ARGB[i] = info.ARGB[i] & 0x00FFFFFF;
+					}
+				}
+				
+				original.Save(file);
+			}
+			
 	        CoreTexture2D atlas = null;
 	        var uv = CoreTexture2D.Pack(Directory.GetFiles(_temporaryFolder, "*.png", SearchOption.AllDirectories)
 	                           	.Where(x=>!x.Contains("info"))

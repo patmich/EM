@@ -18,7 +18,9 @@ namespace LLT
         private string _label;
         private float _realTimeSinceStartup;
        
+        [SerializeField]
         private bool _loop = true;
+        
         private Dictionary<string, IEnumerator> _wait;
         
 #if !ALLOW_UNSAFE
@@ -183,7 +185,7 @@ namespace LLT
                 
                 if(!_loop && GUILayout.Button("Play once"))
                 {
-                    GotoAndPlay(_label);
+                    GotoAndPlay(_label, false);
                 }
                     
                 if(_animationTree != null)

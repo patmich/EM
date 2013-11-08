@@ -1,4 +1,4 @@
-﻿Shader "Custom/StencilIncrement" 
+﻿Shader "LLT/StencilIncrement" 
 {
 	Properties 
 	{

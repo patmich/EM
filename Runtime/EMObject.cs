@@ -75,7 +75,10 @@ namespace LLT
 			_tag = new TSTreeStreamTag(_tree);
 			_tag.Position = _position;
 			
-			_animationHead.Init(this);
+            if(_animationHead != null)
+            {
+			    _animationHead.Init(this);
+            }
 			
 			if((EMFactory.Type)_tag.TypeIndex == EMFactory.Type.EMSprite)
 			{

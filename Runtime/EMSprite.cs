@@ -44,6 +44,28 @@ namespace LLT
 			_tree.Link(tag, link.Current);
 		}
 		
+        public IEnumerator Link(GameObject prefab)
+        {
+            var displayTree = _tree as EMDisplayTreeStream;
+            
+            var go = GameObject.Instantiate(prefab) as GameObject;
+            var root = go.GetComponent<EMRoot>();
+            go.transform.parent = displayTree.Root.transform;
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
+            
+            var link = root.Link(displayTree);
+            while(link.MoveNext())yield return null;
+            
+            displayTree.UpdateFlag |= EMUpdateFlag.Flag(EMUpdateFlag.Flags.InitMesh, EMUpdateFlag.Flags.UpdateDrawCalls);
+            
+            var tag = new TSTreeStreamTag(_tree);
+            tag.Position = Position - TSTreeStreamTag.TSTreeStreamTagSizeOf;
+            
+            _tree.Link(tag, link.Current);
+        }
+        
 				
 		public Vector2 Pos
 		{

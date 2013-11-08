@@ -1,4 +1,4 @@
-﻿Shader "Custom/StencilDecrement" 
+﻿Shader "LLT/StencilDecrement" 
 {
 	Properties 
 	{

@@ -39,13 +39,13 @@
 	        if (_hasMultTerms)
 	        {
 	            var bitCount = (int)reader.ReadBits(4, false);
-	            RedMultTerm = (byte)reader.ReadBits(bitCount, true);
-	            GreenMultTerm = (byte)reader.ReadBits(bitCount, true);
-	            BlueMultTerm = (byte)reader.ReadBits(bitCount, true);
+	            RedMultTerm = (byte)UnityEngine.Mathf.Clamp(reader.ReadBits(bitCount, true), 0, 255);
+	            GreenMultTerm = (byte)UnityEngine.Mathf.Clamp(reader.ReadBits(bitCount, true), 0, 255);
+	            BlueMultTerm = (byte)UnityEngine.Mathf.Clamp(reader.ReadBits(bitCount, true), 0, 255);
 	
 	            if (alpha)
 	            {
-	                AlphaMultTerm = (byte)reader.ReadBits(bitCount, true);
+	                AlphaMultTerm = (byte)UnityEngine.Mathf.Clamp(reader.ReadBits(bitCount, true), 0, 255);
 	            }
 	            else
 	            {
@@ -55,13 +55,13 @@
 	        if (_hasAddTerms)
 	        {
 	            var bitCount = (int)reader.ReadBits(4, false);
-	            RedAddTerm = (byte)reader.ReadBits(bitCount, true);
-	            GreenAddTerm = (byte)reader.ReadBits(bitCount, true);
-	            BlueAddTerm = (byte)reader.ReadBits(bitCount, true);
+	            RedAddTerm = (byte)UnityEngine.Mathf.Clamp(reader.ReadBits(bitCount, true), 0, 255);
+	            GreenAddTerm = (byte)UnityEngine.Mathf.Clamp(reader.ReadBits(bitCount, true), 0, 255);
+	            BlueAddTerm = (byte)UnityEngine.Mathf.Clamp(reader.ReadBits(bitCount, true), 0, 255);
 	
 	            if (alpha)
 	            {
-	                AlphaAddTerm = (byte)reader.ReadBits(bitCount, true);
+	                AlphaAddTerm = (byte)UnityEngine.Mathf.Clamp(reader.ReadBits(bitCount, true), 0, 255);
 	            }
 	            else
 	            {
