@@ -40,9 +40,10 @@ namespace LLT
 		public const int Uv_Y_Offset = 92;
 		public const int Uv_Width_Offset = 96;
 		public const int Uv_Height_Offset = 100;
-		public const int ClipCount_Offset = 104;
-		public const int ShapeIndex_Offset = 106;
-		public const int UpdateFlag_Offset = 108;
+		public const int Depth_Offset = 104;
+		public const int ClipDepth_Offset = 106;
+		public const int ShapeIndex_Offset = 108;
+		public const int UpdateFlag_Offset = 110;
 		public const int EMShapeSizeOf = 112;
 
 		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
@@ -50,7 +51,7 @@ namespace LLT
 		public readonly LLT.EMRect Rect = new LLT.EMRect();
 		public readonly LLT.EMRect Uv = new LLT.EMRect();
 
-		public ushort ClipCount
+		public ushort Depth
 		{
 			get
 			{
@@ -61,7 +62,7 @@ namespace LLT
 				_tree.Write(_position + 104, value);
 			}
 		}
-		public ushort ShapeIndex
+		public ushort ClipDepth
 		{
 			get
 			{
@@ -72,15 +73,26 @@ namespace LLT
 				_tree.Write(_position + 106, value);
 			}
 		}
-		public byte UpdateFlag
+		public ushort ShapeIndex
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 108);
+				return _tree.ReadUInt16(_position + 108);
 			}
 			set
 			{
 				_tree.Write(_position + 108, value);
+			}
+		}
+		public byte UpdateFlag
+		{
+			get
+			{
+				return _tree.ReadByte(_position + 110);
+			}
+			set
+			{
+				_tree.Write(_position + 110, value);
 			}
 		}
 

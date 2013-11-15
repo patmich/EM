@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 namespace LLT
 {
-	[StructLayout(LayoutKind.Explicit, Size=76)]
+	[StructLayout(LayoutKind.Explicit, Size=80)]
 	public struct EMSpriteStructLayout
 	{
 		[FieldOffset(0)]
@@ -9,8 +9,10 @@ namespace LLT
 		[FieldOffset(36)]
 		public LLT.EMTransformStructLayout LocalToWorld;
 		[FieldOffset(69)]
-		public ushort ClipCount;
-		[FieldOffset(71)]
+		public ushort Depth;
+		[FieldOffset(72)]
+		public ushort ClipDepth;
+		[FieldOffset(74)]
 		public byte UpdateFlag;
 	}
 }

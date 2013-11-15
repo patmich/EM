@@ -6,13 +6,46 @@ namespace LLT
 {
 	public sealed class EMSwfDefineSprite : EMSwfObject
 	{
-	    private class ChildKey : IComparer<ChildKey>
+		private sealed class MaskKey
+		{
+			public int Depth { get; private set; }
+			public int ClipDepth { get; private set; }
+
+			public MaskKey(int depth, int clipDepth)
+			{
+				Depth = depth;
+				ClipDepth = clipDepth;
+			}
+
+			public static bool operator==(MaskKey left, MaskKey right)
+			{
+				if(Object.ReferenceEquals(left, right))
+				{
+					return true;
+				}
+				if(Object.ReferenceEquals(left, null) || Object.ReferenceEquals(right, null))
+				{
+					return false;
+				}
+				return left.ClipDepth == right.ClipDepth && left.Depth == right.Depth;
+			}
+			public static bool operator!=(MaskKey left, MaskKey right)
+			{
+				return !(left == right);
+			}
+		}
+
+	    private sealed class ChildKey : IComparer<ChildKey>
 	    {
 	        private int _depth;
 	        private int _firstFrame;
 	        private string _name;
 			private int _refId;
-			
+			private int _clipDepth;
+
+			public MaskKey MaskKey { get; set; }
+			public int LastFrame { get; set; }
+
 	        public string Name
 	        {
 	            get
@@ -44,13 +77,21 @@ namespace LLT
 					return _refId;
 				}
 			}
-			
-	        public ChildKey(int depth, int firstFrame, bool hasName, string name, int refId)
+
+			public ChildKey(int depth, int clipDepth , int firstFrame, bool hasName, string name, int refId)
 	        {
 	            _depth = depth;
+				_clipDepth = clipDepth;
 	            _firstFrame = firstFrame;
 	            _name = name;
 				_refId = refId;
+
+				LastFrame = -1;
+
+				if(_clipDepth > 0)
+				{
+					MaskKey = new MaskKey(_depth, _clipDepth);
+				}
 	        }
 	
 	        public override int GetHashCode()
@@ -68,7 +109,53 @@ namespace LLT
 	
 	        public int Compare(ChildKey x, ChildKey y)
 	        {
-	            var retVal = x._depth.CompareTo(y._depth);
+				var overlap = !(x.LastFrame < y._firstFrame) && !(y.LastFrame < x._firstFrame);
+
+				if(x._clipDepth > 0 && y._clipDepth == 0 && x.MaskKey == y.MaskKey)
+				{
+					return -1;
+				}
+				if(y._clipDepth > 0 && x._clipDepth == 0 && y.MaskKey == x.MaskKey)
+				{
+					return 1;
+				}
+
+				if(x.MaskKey != null && y.MaskKey != null && x.MaskKey != y.MaskKey && (!(x._clipDepth < y._depth) && !(y._clipDepth < x._depth)))
+				{
+					if(overlap)
+					{
+						throw new Exception("Detected overlap");
+					}
+					else
+					{
+						return x._firstFrame.CompareTo(y._firstFrame);
+					}
+				}
+				if(x.MaskKey != null && y.MaskKey == null && x.MaskKey.Depth <= y.Depth && x.MaskKey.ClipDepth >= y.Depth )
+				{
+					if(overlap)
+					{
+						throw new Exception("Detected overlap");
+					}
+					else
+					{
+						return 1;
+					}
+				}
+
+				if(y.MaskKey != null && x.MaskKey == null && y.MaskKey.Depth <= x.Depth && y.MaskKey.ClipDepth >= x.Depth)
+				{
+					if(overlap)
+					{
+						throw new Exception("Detected overlap");
+					}
+					else
+					{
+						return -1;
+					}
+				}
+
+				var retVal = x._depth.CompareTo(y._depth);
 	            if (retVal == 0)
 	            {
 	                retVal = x._firstFrame.CompareTo(y._firstFrame);
@@ -95,14 +182,13 @@ namespace LLT
 			Transform_OG_Offset,
 			Transform_OB_Offset,
 			Transform_Placed_Offset,
-			ClipCount_Offset,
 			UpdateFlag_Offset,
 		}
 		
 	    private EMSwfImporter _importer;
 	    private ushort _frameCount;
 	    private readonly List<EMSwfObject> _controlTags = new List<EMSwfObject>();
-		private readonly Dictionary<ChildKey, ITSTreeNode> _childs = new Dictionary<ChildKey, ITSTreeNode>();
+		private List<KeyValuePair<ChildKey, ITSTreeNode>> _childs = new List<KeyValuePair<ChildKey, ITSTreeNode>>();
 		private List<KeyValuePair<EMSwfCurveKey, EMSwfAnimationCurve>> _animationCurves;
 		
 		public List<EMSwfObject> ControlTags
@@ -137,7 +223,7 @@ namespace LLT
 		
 		public void Expand()
 		{
-			_childs.Clear();
+			var childs = new Dictionary<ChildKey, ITSTreeNode>();
 	        var currentFrame = 0;
 	
 	        for (var i = 0; i < _controlTags.Count; i++)
@@ -149,63 +235,83 @@ namespace LLT
 	            else if (_controlTags[i] is EMSwfPlaceObject2)
 	            {
 	                var placeObject2 = _controlTags[i] as EMSwfPlaceObject2;
+
 	                if (placeObject2.IsNewCharacter() || placeObject2.IsCharacterAtDepthReplaced())
-	                {                  
-	                    var key = new ChildKey(placeObject2.Depth, currentFrame, placeObject2.HasName(), placeObject2.Name, placeObject2.RefId);
-	                    CoreAssert.Fatal(!_childs.ContainsKey(key));
-						
+	                {         
+						var previousChild = childs.Where(x=>x.Key.Depth == placeObject2.Depth && x.Key.FirstFrame <= currentFrame - 1).LastOrDefault();
+						if(previousChild.Key != null && previousChild.Key.LastFrame == -1)
+						{
+							previousChild.Key.LastFrame = currentFrame - 1;
+						}
+
+	                    var key = new ChildKey(placeObject2.Depth, placeObject2.ClipDepth, currentFrame, placeObject2.HasName(), placeObject2.Name, placeObject2.RefId);
+	                    CoreAssert.Fatal(!childs.ContainsKey(key));
+
 	                    var defineSprite = _importer.GetObject<EMSwfDefineSprite>((ushort)placeObject2.RefId);
 	                    if (defineSprite != null)
 	                    {
-							if(!_childs.ContainsKey(key))
+							if(!childs.ContainsKey(key))
 							{
-	                        	_childs.Add(key, new EMSwfDefineSpriteNode(key.Name, currentFrame == 0, placeObject2.Matrix, placeObject2.CXform, currentFrame == 0 ? placeObject2.ClipDepth : (ushort)0, defineSprite));
+								childs.Add(key, new EMSwfDefineSpriteNode(key.Name, currentFrame == 0, placeObject2.Depth ,placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, defineSprite));
 							}
 	                    }
 						var defineShape = _importer.GetObject<EMSwfDefineShape>((ushort)placeObject2.RefId);
 	                    if (defineShape != null)
 	                    {
-							if(!_childs.ContainsKey(key))
+							if(!childs.ContainsKey(key))
 							{
-	                        	_childs.Add(key, new EMSwfDefineShapeNode(key.Name, currentFrame == 0, placeObject2.Matrix, placeObject2.CXform, currentFrame == 0 ? placeObject2.ClipDepth : (ushort)0, defineShape));
+								childs.Add(key, new EMSwfDefineShapeNode(key.Name, currentFrame == 0, placeObject2.Depth, placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, defineShape));
 							}
 	                    }
 	                }
-	            }                             
-	        }
-			
-			var childsKey = _childs.OrderBy(x=>x.Key, new ChildKey(0, 0, false, null, 0)).Select(x=>x.Key).ToList();
-			for(var i = 0; i < childsKey.Count; i++)
-			{
-				var child = _childs[childsKey[i]];
-				
-				if(child is EMSwfDefineShapeNode)
+	            }       
+				else if(_controlTags[i] is EMSwfRemoveObject2)
 				{
-					var node = child as EMSwfDefineShapeNode;
-					
-					if(node.ClipDepth > 0)
+					var removeObject2 = _controlTags[i] as EMSwfRemoveObject2;
+					var previousChild = childs.Where(x=>x.Key.Depth == removeObject2.Depth && x.Key.FirstFrame <= currentFrame - 1).LastOrDefault();
+					if(previousChild.Key != null)
 					{
-						var clipCount = childsKey.FindLastIndex(x=>x.Depth < node.ClipDepth) - i;	
-						node.ClipCount = clipCount;
+						previousChild.Key.LastFrame = currentFrame - 1;
 					}
 				}
-				else if(child is EMSwfDefineSpriteNode)
+	        }
+
+			foreach(var child in childs)
+			{
+				if(child.Key.LastFrame == -1)
 				{
-					var node = child as EMSwfDefineSpriteNode;
-					if(node.ClipDepth > 0)
-					{
-						var clipCount = childsKey.FindLastIndex(x=>x.Depth < node.ClipDepth) - i;	
-						node.ClipCount = clipCount;
-					}
+					child.Key.LastFrame = currentFrame - 1;
 				}
 			}
+
+			var dict = new Dictionary<ChildKey, MaskKey>();
+			foreach(var child in childs)
+			{
+				var masks = childs.Where(x=>x.Key.MaskKey != null && x.Key.MaskKey.Depth < child.Key.Depth && x.Key.MaskKey.ClipDepth >= child.Key.Depth && (!(x.Key.LastFrame < child.Key.FirstFrame) && !(child.Key.LastFrame < x.Key.FirstFrame))).Select(x=>x.Key).ToList();
+				if(masks.Count > 0 && !masks.TrueForAll(x=>masks[0].MaskKey == x.MaskKey))
+				{
+					throw new Exception("Mask key must be equal for all masking child key.");
+				}
+
+				if(masks.Count > 0)
+				{
+					dict.Add(child.Key, masks[0].MaskKey);
+				}
+			}
+
+			foreach(var kvp in dict)
+			{
+				kvp.Key.MaskKey = kvp.Value;
+			}
+
+			_childs = childs.OrderBy(x=>x.Key, new ChildKey(0,0,0, false, null,0)).ToList();
 		}
 	
 		public List<ITSTreeNode> Childs
 		{
 			get
 			{
-				return _childs.OrderBy(x=>x.Key, new ChildKey(0,0,false, null,0)).Select(x=>x.Value).ToList();
+				return _childs.Select(x=>x.Value).ToList();
 			}
 		}
 		
@@ -224,7 +330,7 @@ namespace LLT
 				}
 				
 				var retVal = new CoreDictionary<EMSwfCurveKey, EMSwfAnimationCurve>();
-				var childs = _childs.OrderBy(x=>x.Key, new ChildKey(0, 0, false, null,0)).Select(x=>x.Key).ToList();
+				var childs = _childs.Select(x=>x.Key).ToList();
 				
 				for(var i = 0; i < childs.Count; i++)
 				{
@@ -244,8 +350,7 @@ namespace LLT
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_OR_Offset), TSPropertyType._byte)].Add(0, 0f);
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_OG_Offset), TSPropertyType._byte)].Add(0, 0f);
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_OB_Offset), TSPropertyType._byte)].Add(0, 0f);
-					
-					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(0, 0f);
+
 					retVal[new EMSwfCurveKey(i, Offset(childs[i].RefId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(0, 1f);
 				}
 				
@@ -260,8 +365,8 @@ namespace LLT
 	                {
 	                    var placeObject2 = _controlTags[i] as EMSwfPlaceObject2;
 
-						var oldChildIndex = childs.FindLastIndex(x=>x.Depth == placeObject2.Depth && x.FirstFrame <= currentFrame - 1);
-						var childIndex = childs.FindLastIndex(x=>x.Depth == placeObject2.Depth && x.FirstFrame <= currentFrame);
+						var oldChildIndex = childs.FindIndex(x=>x.Depth == placeObject2.Depth && x.FirstFrame <= (currentFrame - 1) && (currentFrame - 1) <= x.LastFrame);
+						var childIndex = childs.FindIndex(x=>x.Depth == placeObject2.Depth && x.FirstFrame <= currentFrame && currentFrame <= x.LastFrame);
 						if(childIndex != -1)
 						{
 							var refId = childs[childIndex].RefId;
@@ -275,11 +380,6 @@ namespace LLT
 								if(oldChildIndex != -1)
 								{
 									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 0f);
-									
-									if(retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f))
-									{
-										retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
-									}
 								}
 							}
 							
@@ -332,21 +432,6 @@ namespace LLT
 								}
 	
 								retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 1f);
-								
-								if(placeObject2.HasClipDepth())
-								{
-									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, clipCount))
-									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
-									}
-								}
-								else
-								{
-									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Sample(currentFrame - 1)))
-									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
-									}
-								}
 							}
 							else
 							{
@@ -373,14 +458,6 @@ namespace LLT
 								}
 								
 								retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 1f);
-								
-								if(placeObject2.HasClipDepth())
-								{
-									if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, clipCount))
-									{
-										retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
-									}
-								}
 							}
 						}
 					}
@@ -388,16 +465,11 @@ namespace LLT
 					{
 						var removeObject2 = _controlTags[i] as EMSwfRemoveObject2;
 						
-						var childIndex = childs.FindLastIndex(x=>x.Depth == removeObject2.Depth && x.FirstFrame <= currentFrame);
+						var childIndex = childs.FindIndex(x=>x.Depth == removeObject2.Depth && x.FirstFrame <= (currentFrame - 1) && (currentFrame - 1) <= x.LastFrame);
 						if(childIndex != -1)
 						{
 							var refId = childs[childIndex].RefId;
 							retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 0f);
-							
-							if(retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.ClipCount_Offset), TSPropertyType._ushort)].Add(currentFrame, 0f))
-							{
-								retVal[new EMSwfCurveKey(childIndex, Offset(refId, PropertyId.UpdateFlag_Offset), TSPropertyType._byte)].Add(currentFrame, EMUpdateFlag.Flag(EMUpdateFlag.Flags.UpdateDrawCalls), false);
-							}
 						}
 					}
 				}

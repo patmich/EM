@@ -119,7 +119,7 @@ namespace LLT
 		
 		// ToDo need as many shared material multiple as mask depth.
 		private readonly Material[] _sharedMaterials = new Material[(int)ShaderType.Count * 2];
-		private TSTreeStreamSiblingEnumerator _siblingEnumerator;
+		private EMDisplayTreeStreamDFSEnumerator _siblingEnumerator;
         private CoreTask _init;
         
 #pragma warning disable 0414        
@@ -170,30 +170,33 @@ namespace LLT
 			}
 			
 			_tree.Init(this, _bytes.bytes);
-			_siblingEnumerator = new TSTreeStreamSiblingEnumerator(_tree);
+			_siblingEnumerator = new EMDisplayTreeStreamDFSEnumerator(this);
 			
 			enabled = true;
 		}
 		
 		private void Update()
 		{
+			var mesh = Mesh;
+
             if(EMUpdateFlag.Should(_tree.UpdateFlag, EMUpdateFlag.Flags.InitMesh))
             {
 			    InitMesh();
+
+				mesh.vertices = _vertices;
+				mesh.uv = _uv;
+				mesh.tangents = _colorMult;
+				mesh.colors32 = _colorAdd;
+
+				UpdateDrawcalls();
             }
 			
 			UpdateTransforms();
-			
-            var mesh = Mesh;
+
 			mesh.vertices = _vertices;
 			mesh.uv = _uv;
 		    mesh.tangents = _colorMult;
             mesh.colors32 = _colorAdd;
-            
-			if(EMUpdateFlag.Should(_tree.UpdateFlag, EMUpdateFlag.Flags.UpdateDrawCalls))
-			{
-				UpdateDrawcalls();
-			}
             
             _tree.UpdateFlag = 0;
 		}
@@ -236,27 +239,42 @@ namespace LLT
 			
 			while(iter.MoveNext(false))
 			{
-				var clipCount = 0;
-				if(iter.IsSprite())
+				while(mask.Count > 0 && mask[mask.Count - 1].End <= iter.Current.Position)
 				{
-					clipCount = iter.Sprite.ClipCount;
+					mask.RemoveAt(mask.Count - 1);
 				}
-				else if(iter.IsShape())
+				while(masked.Count > 0 && masked[masked.Count - 1].End <= iter.Current.Position)
 				{
-					clipCount = iter.Shape.ClipCount;
-				}	
-				if(clipCount > 0)
+					AddDrawcall(ShaderType.StencilDecrement, masked[masked.Count - 1].StencilRef, null);	
+					masked.RemoveAt(masked.Count - 1);
+				}
+
+				var clipDepth = iter.ClipDepth;
+				if(clipDepth > 0)
 				{
-					_siblingEnumerator.Init(iter.ParentTag, iter.Current);
-					_siblingEnumerator.MoveNext();
-					
-					for(var i = 0; i < clipCount; i++)
+					CoreAssert.Fatal(mask.Count == 0 || iter.Current.Position < mask[mask.Count - 1].End, "Expecting only one mask");
+					if(mask.Count == 0 || mask[mask.Count - 1].End <= iter.Current.Position)
 					{
-						_siblingEnumerator.MoveNext();
-					}
+						var depth = iter.Depth;
+
+						_siblingEnumerator.Reset(iter.ParentTag, iter.Current);
+						while(_siblingEnumerator.MoveNext(true) && _siblingEnumerator.Depth == depth);
+
+						var startMasked = _siblingEnumerator.Current.Position;
+						var endMasked = startMasked;
+
+						mask.Add(new MaskOperation(){Start = (int)iter.Current.Position, End = startMasked, StencilRef = mask.Count});
 					
-					mask.Add(new MaskOperation(){Start = (int)iter.Current.Position, End = iter.Current.SiblingPosition, StencilRef = mask.Count});
-					masked.Add(new MaskOperation(){Start = (int)iter.Current.Position, End = _siblingEnumerator.Current.SiblingPosition, StencilRef = mask.Count});
+						if(_siblingEnumerator.Depth <= clipDepth && _siblingEnumerator.ClipDepth == 0)
+						{
+							endMasked = _siblingEnumerator.Current.SiblingPosition;
+						}
+						while(_siblingEnumerator.MoveNext(true) && _siblingEnumerator.Depth <= clipDepth && _siblingEnumerator.ClipDepth == 0)
+						{
+							endMasked = _siblingEnumerator.Current.SiblingPosition;
+						}
+						masked.Add(new MaskOperation(){Start = startMasked, End = endMasked, StencilRef = mask.Count});
+					}
 				}
 				
 				if(iter.IsShape())
@@ -264,40 +282,32 @@ namespace LLT
 					MaskOperation maskOperation = null;
 					if(mask.Count > 0)
 					{
-						maskOperation = mask.FindLast(x=>x.Start <= iter.Current.Position && iter.Current.Position < x.End);
-						
-						if(maskOperation != null)
-						{						
+						maskOperation = mask[mask.Count - 1];
+						if(mask[mask.Count - 1].Start <= iter.Current.Position && iter.Current.Position < mask[mask.Count - 1].End)
+						{
 							AddDrawcall(ShaderType.StencilIncrement, maskOperation.StencilRef, iter.Root._atlas);
 							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
 						}
-					}
-					
-					if(maskOperation == null && masked.Count > 0)
-					{
-						maskOperation = masked.FindLast(x=>x.Start <= iter.Current.Position && iter.Current.Position < x.End);
-						if(maskOperation != null)
+						else
 						{
-							AddDrawcall(ShaderType.Transparent, maskOperation.StencilRef, iter.Root._atlas);
-							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
-							
-							if(maskOperation.End <= iter.Current.SiblingPosition)
-							{
-								maskOperation = mask[mask.Count - 1];
-									
-								AddDrawcall(ShaderType.StencilDecrement, maskOperation.StencilRef + 1, iter.Root._atlas);							
-								AddDrawcall(ShaderType.Transparent, 0, iter.Root._atlas);
-								
-								masked.Clear();
-								mask.Clear();
-							}
+							maskOperation = null;
 						}
 					}
 					
 					if(maskOperation == null)
 					{
-                        AddDrawcall(ShaderType.Transparent, 0, iter.Root._atlas);
-						_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
+						if(masked.Count > 0)
+						{
+							maskOperation = masked[masked.Count - 1];
+							CoreAssert.Fatal(masked[masked.Count - 1].Start <= iter.Current.Position && iter.Current.Position < masked[masked.Count - 1].End);
+							AddDrawcall(ShaderType.Transparent, maskOperation.StencilRef, iter.Root._atlas);
+							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
+						}
+						else
+						{
+							AddDrawcall(ShaderType.Transparent, 0, iter.Root._atlas);
+							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
+						}
 					}
 				}	
 			}
@@ -560,7 +570,9 @@ namespace LLT
 		
 		private void AddDrawcall(ShaderType shaderType, int stencilRef, Texture texture)
 		{
+
 			var index = (int)shaderType + (int)ShaderType.Count * stencilRef;
+			CoreAssert.Fatal(index < _sharedMaterials.Length);
 			if(_sharedMaterials[index] == null)
 			{
 				var material = new Material (Shader.Find("LLT/" + shaderType));

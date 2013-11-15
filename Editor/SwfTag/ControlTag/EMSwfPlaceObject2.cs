@@ -148,7 +148,10 @@
 	        {
 	            ClipDepth = reader.ReadUInt16();
 	        }
-			
+			else
+			{
+				ClipDepth = 0;
+			}
 	        Bytes = reader.ReadBytes((int)(_tag.Length - (reader.BaseStream.Position - position)));
 	    }
 	

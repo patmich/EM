@@ -32,14 +32,15 @@ namespace LLT
 		public const int LocalToWorld_OG_Offset = 66;
 		public const int LocalToWorld_OB_Offset = 67;
 		public const int LocalToWorld_Placed_Offset = 68;
-		public const int ClipCount_Offset = 72;
-		public const int UpdateFlag_Offset = 74;
-		public const int EMSpriteSizeOf = 76;
+		public const int Depth_Offset = 72;
+		public const int ClipDepth_Offset = 74;
+		public const int UpdateFlag_Offset = 76;
+		public const int EMSpriteSizeOf = 80;
 
 		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
 		public readonly LLT.EMTransform LocalToWorld = new LLT.EMTransform();
 
-		public ushort ClipCount
+		public ushort Depth
 		{
 			get
 			{
@@ -50,15 +51,26 @@ namespace LLT
 				_tree.Write(_position + 69, value);
 			}
 		}
+		public ushort ClipDepth
+		{
+			get
+			{
+				return _tree.ReadUInt16(_position + 72);
+			}
+			set
+			{
+				_tree.Write(_position + 72, value);
+			}
+		}
 		public byte UpdateFlag
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 71);
+				return _tree.ReadByte(_position + 74);
 			}
 			set
 			{
-				_tree.Write(_position + 71, value);
+				_tree.Write(_position + 74, value);
 			}
 		}
 
@@ -87,7 +99,7 @@ namespace LLT
 		{
 			get
 			{
-				return 76;
+				return 80;
 			}
 		}
 	}

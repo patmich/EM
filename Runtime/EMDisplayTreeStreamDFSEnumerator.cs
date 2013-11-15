@@ -46,7 +46,39 @@ namespace LLT
 				return _shape;
 			}
 		}
-        
+
+		public int Depth
+		{
+			get
+			{
+				if(IsShape())
+				{
+					return Shape.Depth;
+				}
+				else
+				{
+					CoreAssert.Fatal(IsSprite());
+					return Sprite.Depth;
+				}
+			}
+		}
+
+		public int ClipDepth
+		{
+			get
+			{
+				if(IsShape())
+				{
+					return Shape.ClipDepth;
+				}
+				else
+				{
+					CoreAssert.Fatal(IsSprite());
+					return Sprite.ClipDepth;
+				}
+			}
+		}
+
 		public EMDisplayTreeStreamDFSEnumerator(EMRoot root) : base(root, root.DisplayTree)
 		{
 			_sprite.Init(root.DisplayTree);

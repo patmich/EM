@@ -7,8 +7,9 @@ namespace LLT
 	[Serializable]
 	[TSLayout(typeof(EMTransform), "Transform", 0)]
 	[TSLayout(typeof(EMTransform), "LocalToWorld", 1)]
-	[TSLayout(typeof(ushort), "ClipCount", 2)]
-	[TSLayout(typeof(byte), "UpdateFlag", 3)]
+	[TSLayout(typeof(ushort), "Depth", 2)]
+	[TSLayout(typeof(ushort), "ClipDepth", 3)]
+	[TSLayout(typeof(byte), "UpdateFlag", 4)]
 	public sealed partial class EMSprite : TSTreeStreamEntry
 	{
 		public new int FactoryTypeIndex 

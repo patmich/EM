@@ -6,21 +6,21 @@ namespace LLT
 	{
 		private string _name;
 	    private bool _placed;
+		private int _depth;
 		private EMSwfMatrix _matrix;
 		private EMSwfColorTransform _cxForm;
 	    private EMSwfDefineShape _defineShape;
-		
-		public int ClipDepth { private set; get; }
-		public int ClipCount { set; get; }
-		
-	    internal EMSwfDefineShapeNode(string name, bool placed, EMSwfMatrix matrix, EMSwfColorTransform cxForm, int clipDepth, EMSwfDefineShape defineShape)
+		private int _clipDepth;
+
+	    internal EMSwfDefineShapeNode(string name, bool placed, int depth, EMSwfMatrix matrix, EMSwfColorTransform cxForm, int clipDepth, EMSwfDefineShape defineShape)
 	    {
 			_name = name;
 			_placed = placed;
+			_depth = depth;
 	        _matrix = matrix;
 			_cxForm = cxForm;
 			_defineShape = defineShape;
-			ClipDepth = clipDepth;
+			_clipDepth = clipDepth;
 	    }
 		
 	    public int FactoryTypeIndex
@@ -88,9 +88,12 @@ namespace LLT
 			shape.Rect.Height = _defineShape.Bounds.YMax - _defineShape.Bounds.YMin;
 			
 			shape.Uv = _defineShape.Uv;
-			
-			CoreAssert.Fatal(ClipCount < ushort.MaxValue);
-			shape.ClipCount = (ushort)ClipCount;
+
+			CoreAssert.Fatal(_depth < ushort.MaxValue);
+			shape.Depth = (ushort)_depth;
+
+			CoreAssert.Fatal(_clipDepth < ushort.MaxValue);
+			shape.ClipDepth = (ushort)_clipDepth;
 			
 			var bytes = new byte[Marshal.SizeOf(shape.GetType())];
 			

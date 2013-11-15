@@ -7,22 +7,21 @@ namespace LLT
 	{
 	    private string _name;
 		private bool _placed;
-		
+		private int _depth;
 	    private EMSwfMatrix _matrix;
 		private EMSwfColorTransform _cxForm;
 		
 	    private EMSwfDefineSprite _defineSprite;
+		private int _clipDepth;
 		
-		public int ClipDepth { get; private set; }
-		public int ClipCount { get; set; }
-		
-	    internal EMSwfDefineSpriteNode(string name, bool placed, EMSwfMatrix matrix, EMSwfColorTransform cxForm, int clipDepth, EMSwfDefineSprite defineSprite)
+	    internal EMSwfDefineSpriteNode(string name, bool placed, int depth, EMSwfMatrix matrix, EMSwfColorTransform cxForm, int clipDepth, EMSwfDefineSprite defineSprite)
 	    {
 	        _name = name;
 			_placed = placed;
+			_depth = depth;
 	        _matrix = matrix;
 			_cxForm = cxForm;
-			ClipDepth = clipDepth;
+			_clipDepth = clipDepth;
 	        _defineSprite = defineSprite;
 			_defineSprite.Expand();
 		}
@@ -94,8 +93,11 @@ namespace LLT
 			
 			sprite.Transform.Placed = (byte)(_placed ? 1 : 0);
 
-			CoreAssert.Fatal(ClipCount < ushort.MaxValue);
-			sprite.ClipCount = (ushort)ClipCount;
+			CoreAssert.Fatal(_depth < ushort.MaxValue);
+			sprite.Depth = (ushort)_depth;
+
+			CoreAssert.Fatal(_clipDepth < ushort.MaxValue);
+			sprite.ClipDepth = (ushort)_clipDepth;
 			
 			var bytes = new byte[Marshal.SizeOf(sprite.GetType())];
 			
