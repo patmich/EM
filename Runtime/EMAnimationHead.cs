@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace LLT
 {
-	public sealed class EMAnimationHead : EMComponent
+	public sealed class EMAnimationHead : EMComponent, ICoreTimeline
 	{
 		[SerializeField]
 		private TextAsset _data;
@@ -29,7 +29,8 @@ namespace LLT
 #endif
 		
 		private float _time;
-		
+		private float _speed;
+        
 		public override void Init(EMObject obj)
 		{
 			base.Init(obj);
@@ -125,7 +126,7 @@ namespace LLT
 				return;
 			}
 			
-            _time += UnityEngine.Time.deltaTime;
+            _time += UnityEngine.Time.deltaTime * _speed;
 			if(_time > _animationClip.Length)
 			{
                 if(_loop)
@@ -218,6 +219,46 @@ namespace LLT
             if(_animationTree != null)
             {
                 _animationTree.Dispose();    
+            }
+        }
+
+        public void Play ()
+        {
+            Speed = 1;
+        }
+
+        public void Pause ()
+        {
+            Speed = 0;
+        }
+
+        public float Time 
+        {
+            get 
+            {
+                return _time;
+            }
+            set
+            {
+                _time = value % (_animationClip.Length);
+                _keyframesEnumerator.Reset();
+                _keyframesEnumerator.MoveNext();
+            }
+        }
+
+        public float Length 
+        {
+            get 
+            {
+                return _animationClip.Length;
+            }
+        }
+
+        public float Speed 
+        {
+            set
+            {
+                _speed = value;
             }
         }
 	}

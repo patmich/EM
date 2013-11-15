@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace LLT
 {
-	//[ExecuteInEditMode]
+	[ExecuteInEditMode]
 	public sealed class EMRoot : EMMonoBehaviour 
 	{
 		private sealed class Drawcall
@@ -113,7 +113,6 @@ namespace LLT
 		
 		// ToDo need as many shared material multiple as mask depth.
 		private readonly Material[] _sharedMaterials = new Material[(int)ShaderType.Count * 2];
-		private EMDisplayTreeStreamDFSEnumerator _siblingEnumerator;
         private CoreTask _init;
         
 #pragma warning disable 0414        
@@ -170,8 +169,6 @@ namespace LLT
 			}
 			
 			_tree.Init(this, _bytes.bytes);
-			_siblingEnumerator = new EMDisplayTreeStreamDFSEnumerator(this);
-			
 			enabled = true;
 		}
 		
@@ -256,22 +253,24 @@ namespace LLT
 					if(mask.Count == 0 || mask[mask.Count - 1].End <= iter.Current.Position)
 					{
 						var depth = iter.Depth;
+      
+                        var siblingEnumerator = new EMDisplayTreeStreamDFSEnumerator(this, iter.Tree);
+                        siblingEnumerator.Reset(iter.ParentTag, iter.Current);
+                        
+						while(siblingEnumerator.MoveNext(true) && siblingEnumerator.Depth == depth);
 
-						_siblingEnumerator.Reset(iter.ParentTag, iter.Current);
-						while(_siblingEnumerator.MoveNext(true) && _siblingEnumerator.Depth == depth);
-
-						var startMasked = _siblingEnumerator.Current.Position;
+						var startMasked = siblingEnumerator.Current.Position;
 						var endMasked = startMasked;
 
 						mask.Add(new MaskOperation(){Start = (int)iter.Current.Position, End = startMasked, StencilRef = mask.Count});
 					
-						if(_siblingEnumerator.Depth <= clipDepth && _siblingEnumerator.ClipDepth == 0)
+						if(siblingEnumerator.Depth <= clipDepth && siblingEnumerator.ClipDepth == 0)
 						{
-							endMasked = _siblingEnumerator.Current.SiblingPosition;
+							endMasked = siblingEnumerator.Current.SiblingPosition;
 						}
-						while(_siblingEnumerator.MoveNext(true) && _siblingEnumerator.Depth <= clipDepth && _siblingEnumerator.ClipDepth == 0)
+						while(siblingEnumerator.MoveNext(true) && siblingEnumerator.Depth <= clipDepth && siblingEnumerator.ClipDepth == 0)
 						{
-							endMasked = _siblingEnumerator.Current.SiblingPosition;
+							endMasked = siblingEnumerator.Current.SiblingPosition;
 						}
 						masked.Add(new MaskOperation(){Start = startMasked, End = endMasked, StencilRef = mask.Count});
 					}
@@ -309,6 +308,8 @@ namespace LLT
 							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
 						}
 					}
+                    
+                    iter.Shape.LocalToWorld.Placed = 0;
 				}	
 			}
 			

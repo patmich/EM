@@ -80,7 +80,14 @@ namespace LLT
 				}
 			}
 		}
-
+  
+        public EMDisplayTreeStreamDFSEnumerator(EMRoot root, ITSTreeStream tree) : base(tree)
+        {
+            _root = root;
+            _sprite.Init(tree);
+            _shape.Init(tree);
+        }
+        
 		public EMDisplayTreeStreamDFSEnumerator(EMRoot root) : base(root.DisplayTree)
 		{
 			_root = root;

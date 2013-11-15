@@ -223,6 +223,15 @@ namespace LLT
 	
 	            GetObject<EMSwfFileAttributes>().Write(binaryWriter);
 	            GetObject<EMSwfSetBackgroundColor>().Write(binaryWriter);
+				
+				foreach(var obj in GetObjects<EMSwfJPEGTables>())
+				{
+					obj.Write(binaryWriter);
+				}
+				foreach(var obj in GetObjects<EMSwfDefineBits>())
+				{
+					obj.Write(binaryWriter);
+				}
 				foreach(var obj in GetObjects<EMSwfDefineBitsLossless2>())
 				{
 					obj.Write(binaryWriter);

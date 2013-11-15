@@ -43,4 +43,12 @@ namespace LLT
 	public sealed class EMSwfDefineBitsJPEG3 : EMSwfUnhandledObject
 	{
 	}
+	
+	public sealed class EMSwfDefineBits : EMSwfUnhandledObject
+	{
+	}
+	
+	public sealed class EMSwfJPEGTables : EMSwfUnhandledObject
+	{
+	}
 }
