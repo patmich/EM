@@ -131,16 +131,29 @@ namespace LLT
 				using (var tree = new EMDisplayTreeStream())
 	            {
 					var positions = tree.InitFromTree(new EMSwfDefineSpriteNode(root.Key, true, 0, EMSwfMatrix.Identity, EMSwfColorTransform.Identity, 0, defineSprite), null, new EMFactory());
-					var atlas = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + "atlas.png");
+					
 					
 					var rootComponent = prefab.GetComponent<EMRoot>();
 					if(rootComponent == null)
 					{
 						rootComponent = prefab.AddComponent<EMRoot>();
 					}
-					
-					var field = typeof(EMRoot).GetField("_atlas",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-					field.SetValue(rootComponent, atlas);
+					rootComponent.enabled = false;
+
+					var index = 0;
+					var atlas = string.Empty;
+					var textures = new List<Texture>();
+
+					while((atlas = string.Format("{0}atlas{1}.png", _destinationFolder, index++)) != string.Empty && File.Exists(atlas))
+					{
+						var waitAtlas = WaitAsset(atlas);
+						while(waitAtlas.MoveNext())yield return null;
+
+						textures.Add(UnityEditor.AssetDatabase.LoadMainAssetAtPath(atlas) as Texture);
+					}
+
+					var field = typeof(EMRoot).GetField("_textures",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+					field.SetValue(rootComponent, textures.ToArray());
 			
 					field = typeof(EMRoot).GetField("_tree",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 					field.SetValue(rootComponent, tree);
@@ -215,6 +228,10 @@ namespace LLT
 					obj.Write(binaryWriter);
 				}
 				foreach(var obj in GetObjects<EMSwfDefineBitsLossless>())
+				{
+					obj.Write(binaryWriter);
+				}
+				foreach(var obj in GetObjects<EMSwfDefineBitsJPEG3>())
 				{
 					obj.Write(binaryWriter);
 				}
@@ -302,32 +319,46 @@ namespace LLT
 				original.Save(file);
 			}
 			
-	        CoreTexture2D atlas = null;
-	        var uv = CoreTexture2D.Pack(Directory.GetFiles(_temporaryFolder, "*.png", SearchOption.AllDirectories)
+			var textures = Directory.GetFiles(_temporaryFolder, "*.png", SearchOption.AllDirectories)
 	                           	.Where(x=>!x.Contains("info"))
 								.OrderBy(x=>int.Parse(Path.GetFileNameWithoutExtension(x)))
 	                           	.ToList()
 	                           	.ConvertAll(x=>new CoreTexture2D(x))
-	                           	.ToArray(), out atlas, padding);
-			
-	        atlas.Save(string.Format("{0}/atlas.png", _destinationFolder));
-			for(var i = 0; i < uv.Length; i++)
+	                           	.ToArray();
+
+			var textureIndex = 0;
+			while(textures.Count(x => x != null) > 0)
 			{
-				var current = new EMRectStructLayout();
-				current.X = uv[i].X;
-				current.Y = uv[i].Y;
-				current.Width = uv[i].Width;
-				current.Height = uv[i].Height;
-				shapes[i].Uv = current;
+		        CoreTexture2D atlas = null;
+				CoreRect[] uv;
+		
+				textures = CoreTexture2D.Pack(textures, padding, out atlas, out uv);
+				
+		        atlas.Save(string.Format("{0}/atlas{1}.png", _destinationFolder, textureIndex));
+				
+				for(var i = 0; i < uv.Length; i++)
+				{
+					if(uv[i] != null)
+					{
+						var current = new EMRectStructLayout();
+						current.X = uv[i].X;
+						current.Y = uv[i].Y;
+						current.Width = uv[i].Width;
+						current.Height = uv[i].Height;
+						
+						shapes[i].TextureIndex = textureIndex;
+						shapes[i].Uv = current;
+					}
+				}
+
+				textureIndex++;
 			}
 	    }
 		
 		private IEnumerator WaitAsset(string path)
 		{
-			UnityEngine.Object obj = null;
-			while((obj = UnityEditor.AssetDatabase.LoadMainAssetAtPath(path)) == null)
+			while(UnityEditor.AssetDatabase.LoadMainAssetAtPath(path) == null)
 			{
-				UnityEngine.Debug.Log("waiting for asset");
 				yield return null;
 			}
 		}

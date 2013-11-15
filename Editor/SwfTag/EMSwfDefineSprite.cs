@@ -33,6 +33,14 @@ namespace LLT
 			{
 				return !(left == right);
 			}
+			public override bool Equals (object obj)
+			{
+				return base.Equals (obj);
+			}
+			public override int GetHashCode ()
+			{
+				return base.GetHashCode ();
+			}
 		}
 
 	    private sealed class ChildKey : IComparer<ChildKey>
@@ -382,9 +390,7 @@ namespace LLT
 									retVal[new EMSwfCurveKey(oldChildIndex, Offset(refId, PropertyId.Transform_Placed_Offset), TSPropertyType._byte)].Add(currentFrame, 0f);
 								}
 							}
-							
-							var clipCount = childs.FindLastIndex(x=>x.Depth < placeObject2.ClipDepth) - childIndex;	
-							
+
 							if(placeObject2.IsCharacterAtDepthReplaced())
 							{
 								if(placeObject2.HasMatrix())

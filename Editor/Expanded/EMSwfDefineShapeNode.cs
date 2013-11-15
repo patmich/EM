@@ -94,7 +94,10 @@ namespace LLT
 
 			CoreAssert.Fatal(_clipDepth < ushort.MaxValue);
 			shape.ClipDepth = (ushort)_clipDepth;
-			
+
+			CoreAssert.Fatal(_defineShape.TextureIndex < byte.MaxValue);
+			shape.TextureIndex = (byte)_defineShape.TextureIndex;
+
 			var bytes = new byte[Marshal.SizeOf(shape.GetType())];
 			
 			var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);

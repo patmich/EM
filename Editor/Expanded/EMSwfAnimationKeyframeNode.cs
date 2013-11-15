@@ -8,16 +8,14 @@ namespace LLT
 	{
 		private readonly float _frameRate;
 		private readonly int _startIndex;
-		private readonly int _endIndex;
 		private readonly int _index;
 		private readonly List<KeyValuePair<EMSwfCurveKey, EMSwfAnimationCurve>> _curves;
 		private readonly List<ITSTreeNode> _childs = new List<ITSTreeNode>();
 		
-		public EMSwfAnimationKeyframeNode(float frameRate, int startIndex, int endIndex, int index, List<KeyValuePair<EMSwfCurveKey, EMSwfAnimationCurve>> curves)
+		public EMSwfAnimationKeyframeNode(float frameRate, int startIndex, int index, List<KeyValuePair<EMSwfCurveKey, EMSwfAnimationCurve>> curves)
 		{
 			_frameRate = frameRate;
 			_startIndex = startIndex;
-			_endIndex = endIndex;
 			_index = index;
 			_curves = curves;
 

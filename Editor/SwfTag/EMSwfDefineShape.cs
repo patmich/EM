@@ -14,6 +14,7 @@
 	    }
 		
 		internal EMRectStructLayout Uv { get; set; }
+		internal int TextureIndex { get; set; }
 		
 	    public override void Read(EMSwfImporter importer, EMSwfTag tag, EMSwfBinaryReader reader)
 	    {

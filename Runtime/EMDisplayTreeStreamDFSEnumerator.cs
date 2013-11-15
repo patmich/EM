@@ -1,13 +1,15 @@
 using System;
+using UnityEngine;
 
 namespace LLT
 {
-	public sealed class EMDisplayTreeStreamDFSEnumerator : TSTreeStreamDFSEnumerator<EMRoot, EMSprite, EMDisplayTreeStreamDFSEnumerator>
+	public sealed class EMDisplayTreeStreamDFSEnumerator : TSTreeStreamDFSEnumerator<EMSprite, EMDisplayTreeStreamDFSEnumerator>
 	{
 		private EMFactory.Type _currentTypeIndex;
 		private readonly EMShape _shape = new EMShape();
 		private readonly EMSprite _sprite = new EMSprite();
-		
+		private readonly EMRoot _root;
+
 		public EMSprite Sprite
 		{
 			get
@@ -79,10 +81,11 @@ namespace LLT
 			}
 		}
 
-		public EMDisplayTreeStreamDFSEnumerator(EMRoot root) : base(root, root.DisplayTree)
+		public EMDisplayTreeStreamDFSEnumerator(EMRoot root) : base(root.DisplayTree)
 		{
-			_sprite.Init(root.DisplayTree);
-			_shape.Init(root.DisplayTree);
+			_root = root;
+			_sprite.Init(_root.DisplayTree);
+			_shape.Init(_root.DisplayTree);
 		}
 		
 		public override bool MoveNext (bool skipSubTree)
@@ -100,6 +103,20 @@ namespace LLT
 		public bool IsSprite()
 		{
 			return _currentTypeIndex == EMFactory.Type.EMSprite;
+		}
+
+		public Texture Texture
+		{
+			get
+			{
+				if(_link)
+				{
+					return _subEnumerator.Texture;
+				}
+
+				CoreAssert.Fatal(IsShape());
+				return _root.GetTexture(Shape.TextureIndex);
+			}
 		}
 	}
 }

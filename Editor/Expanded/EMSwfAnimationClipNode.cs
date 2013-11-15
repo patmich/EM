@@ -22,21 +22,12 @@ namespace LLT
 			_curves = curves;
 			
 			var currentIndex = _startIndex;
-			var endIndex = _startIndex;
 			for(var i = 0; i < _controlTags.Count; i++)
 			{
 				var controlTag = _controlTags[i];
 				if(controlTag is EMSwfShowFrame)
 				{
-					endIndex++;
-				}
-			}
-			for(var i = 0; i < _controlTags.Count; i++)
-			{
-				var controlTag = _controlTags[i];
-				if(controlTag is EMSwfShowFrame)
-				{
-					_childs.Add(new EMSwfAnimationKeyframeNode(_frameRate, _startIndex, endIndex - 1, currentIndex++, _curves));
+					_childs.Add(new EMSwfAnimationKeyframeNode(_frameRate, _startIndex, currentIndex++, _curves));
 				}
 			}
 		}

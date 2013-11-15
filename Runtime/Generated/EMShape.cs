@@ -43,7 +43,8 @@ namespace LLT
 		public const int Depth_Offset = 104;
 		public const int ClipDepth_Offset = 106;
 		public const int ShapeIndex_Offset = 108;
-		public const int UpdateFlag_Offset = 110;
+		public const int TextureIndex_Offset = 110;
+		public const int UpdateFlag_Offset = 111;
 		public const int EMShapeSizeOf = 112;
 
 		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
@@ -84,7 +85,7 @@ namespace LLT
 				_tree.Write(_position + 108, value);
 			}
 		}
-		public byte UpdateFlag
+		public byte TextureIndex
 		{
 			get
 			{
@@ -93,6 +94,17 @@ namespace LLT
 			set
 			{
 				_tree.Write(_position + 110, value);
+			}
+		}
+		public byte UpdateFlag
+		{
+			get
+			{
+				return _tree.ReadByte(_position + 111);
+			}
+			set
+			{
+				_tree.Write(_position + 111, value);
 			}
 		}
 

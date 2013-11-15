@@ -2,9 +2,9 @@ using System;
 
 namespace LLT
 {
-	public sealed class EMTreeStreamDFSEnumerator : TSTreeStreamDFSEnumerator<System.Object, TSTreeStreamEntry, EMTreeStreamDFSEnumerator>
+	public sealed class EMTreeStreamDFSEnumerator : TSTreeStreamDFSEnumerator<TSTreeStreamEntry, EMTreeStreamDFSEnumerator>
 	{
-		public EMTreeStreamDFSEnumerator(ITSTreeStream tree) : base(null, tree)
+		public EMTreeStreamDFSEnumerator(ITSTreeStream tree) : base(tree)
 		{
 		}
 	}

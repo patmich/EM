@@ -19,6 +19,8 @@ namespace LLT
 		[FieldOffset(108)]
 		public ushort ShapeIndex;
 		[FieldOffset(110)]
+		public byte TextureIndex;
+		[FieldOffset(111)]
 		public byte UpdateFlag;
 	}
 }

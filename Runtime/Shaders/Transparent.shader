@@ -10,18 +10,19 @@
 	{ 
 		Blend SrcAlpha OneMinusSrcAlpha
 		ZWrite Off
-
+		
 		Stencil 
 		{
 			Ref [_Ref]
 			Comp equal
 		}
-	    
+	
 	    Pass
 	    {
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
+			#pragma fragmentoption ARB_precision_hint_fastest 
 			
 			#include "UnityCG.cginc"	
 			
@@ -58,7 +59,7 @@
 			    return o;
 			}
 			
-			float4 frag (v2f i) : COLOR
+			fixed4 frag (v2f i) : COLOR
 			{
 			   	return i.mult * tex2D (_MainTex, i.uv) + i.add;
 			}

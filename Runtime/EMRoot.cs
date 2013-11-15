@@ -101,7 +101,7 @@ namespace LLT
 		private TextAsset _bytes;
 		
 		[SerializeField]
-		private Texture2D _atlas;
+		private Texture[] _textures;
 		
 		[SerializeField]
 		private EMDisplayTreeStream _tree;
@@ -161,7 +161,13 @@ namespace LLT
 		{
 			return _tree.FindObject(path);
 		}
-		
+
+		public Texture GetTexture(int index)
+		{
+			CoreAssert.Fatal(0 <= index && index < _textures.Length);
+			return _textures[index];
+		}
+
 		private IEnumerator Init()
 		{
 			while(_bytes == null)
@@ -285,7 +291,7 @@ namespace LLT
 						maskOperation = mask[mask.Count - 1];
 						if(mask[mask.Count - 1].Start <= iter.Current.Position && iter.Current.Position < mask[mask.Count - 1].End)
 						{
-							AddDrawcall(ShaderType.StencilIncrement, maskOperation.StencilRef, iter.Root._atlas);
+							AddDrawcall(ShaderType.StencilIncrement, maskOperation.StencilRef, iter.Texture);
 							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
 						}
 						else
@@ -300,12 +306,12 @@ namespace LLT
 						{
 							maskOperation = masked[masked.Count - 1];
 							CoreAssert.Fatal(masked[masked.Count - 1].Start <= iter.Current.Position && iter.Current.Position < masked[masked.Count - 1].End);
-							AddDrawcall(ShaderType.Transparent, maskOperation.StencilRef, iter.Root._atlas);
+							AddDrawcall(ShaderType.Transparent, maskOperation.StencilRef, iter.Texture);
 							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
 						}
 						else
 						{
-							AddDrawcall(ShaderType.Transparent, 0, iter.Root._atlas);
+							AddDrawcall(ShaderType.Transparent, 0, iter.Texture);
 							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
 						}
 					}
