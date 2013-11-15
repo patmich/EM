@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace LLT
 {
-	[ExecuteInEditMode]
+	//[ExecuteInEditMode]
 	public sealed class EMRoot : EMMonoBehaviour 
 	{
 		private sealed class Drawcall
@@ -22,13 +22,12 @@ namespace LLT
 			public Material Material { private set; get; }
 			public ShaderType ShaderType { private set; get; }
 			public Texture Texture { private set; get; }
-			
+			public int Placed { get; set; }
+
 			public int[] Indices
 			{
 				get
 				{
-					CoreAssert.Fatal(Count == _count);
-					
 					var indices = new int[_count * 4];
 					for(var i = 0; i < _indices.Count; i++)
 					{
@@ -46,20 +45,15 @@ namespace LLT
 					return indices;
 				}
 			}
-			
-			private int Count
+
+			public int Count
 			{
 				get
 				{
-					var count = 0;
-					for(var i = 0; i < _indices.Count; i++)
-					{
-						count += _indices[i].Count;
-					}
-					return count;
+					return _count;
 				}
 			}
-			
+
 			public Drawcall(ShaderType shaderType, Texture texture, Material material)
 			{
 				ShaderType = shaderType;
@@ -334,7 +328,16 @@ namespace LLT
 
 			iter.Sprite.LocalToWorld.MakeIdentity();
 			iter.Sprite.LocalToWorld.M11 = -1f;
-			
+
+			var drawCallIndex = 0;
+
+			while(_drawcalls[drawCallIndex].ShaderType == ShaderType.StencilDecrement)
+			{
+				drawCallIndex++;
+			}
+
+			var startIndex = 0;
+
 			var skipSubTree = false;			
 			while(iter.MoveNext(false))
 			{
@@ -381,6 +384,7 @@ namespace LLT
 				}
 				else if(iter.IsShape())
 				{
+		
 #if UNITY_WEB || !ALLOW_UNSAFE
 					iter.Shape.LocalToWorld.Concat(iter.Parent.LocalToWorld, iter.Shape.Transform);
 #else
@@ -415,7 +419,19 @@ namespace LLT
 						{
 							p1->LocalToWorld.Placed = 0;
 						}
-						
+
+						if(p1->LocalToWorld.Placed != temp)
+						{
+							if(p1->LocalToWorld.Placed > 0)
+							{
+								_drawcalls[drawCallIndex].Placed++;
+							}
+							else
+							{
+								_drawcalls[drawCallIndex].Placed--;
+							}
+						}
+
 						if(p1->LocalToWorld.Placed == 0 && temp == 0)
 						{
 							skipSubTree = true;
@@ -428,6 +444,17 @@ namespace LLT
 					if(!skipSubTree)
 					{
 						UpdateGeometry(iter);
+					}
+
+					if(iter.Shape.ShapeIndex == startIndex + _drawcalls[drawCallIndex].Count - 1)
+					{
+						startIndex = iter.Shape.ShapeIndex + 1;
+						drawCallIndex++;
+
+						while(drawCallIndex < _drawcalls.Count && _drawcalls[drawCallIndex].ShaderType == ShaderType.StencilDecrement)
+						{
+							drawCallIndex++;
+						}
 					}
 				}
 			}
@@ -598,14 +625,16 @@ namespace LLT
             if((Camera.current.cullingMask & (1 << gameObject.layer)) > 0)
             {
     			var mat = transform.localToWorldMatrix;
-    			var mesh = Mesh;
+    			
+				var mesh = Mesh;
+
     			for(var drawcallIndex = 0; drawcallIndex < _drawcalls.Count; drawcallIndex++)
     			{
     				if(_drawcalls[drawcallIndex].ShaderType == ShaderType.StencilDecrement)
     				{
     					Graphics.Blit(null, _drawcalls[drawcallIndex].Material);
     				}
-    				else
+					else if(_drawcalls[drawcallIndex].Placed > 0)
     				{
                         _drawcalls[drawcallIndex].Material.mainTexture = _drawcalls[drawcallIndex].Texture;
     					_drawcalls[drawcallIndex].Material.SetPass(0);
