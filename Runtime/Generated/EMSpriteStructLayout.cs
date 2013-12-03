@@ -13,6 +13,8 @@ namespace LLT
 		[FieldOffset(72)]
 		public ushort ClipDepth;
 		[FieldOffset(74)]
+		public ushort SpriteIndex;
+		[FieldOffset(76)]
 		public byte UpdateFlag;
 	}
 }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 
 namespace LLT
 {
@@ -13,10 +14,22 @@ namespace LLT
 		[SerializeField]
 		private EMAnimationHead _animationHead;
 		
+        private readonly List<EMComponent> _components = new List<EMComponent>();
+
 		private EMDisplayTreeStream _tree;
 		private TSTreeStreamTag _tag;
 		private EMSprite _sprite;
 		
+        private bool _disposed;
+
+        public EMRoot Root
+        {
+            get
+            {
+                return _tree.Root;
+            }
+        }
+
 		public EMSprite Sprite 
 		{
 			get
@@ -26,10 +39,19 @@ namespace LLT
 			}
 		}
 		
+        public bool HasAnimationHead
+        {
+            get
+            {
+                return _animationHead != null;
+            }
+        }
+
 		public EMAnimationHead AnimationHead
 		{
 			get
 			{
+				CoreAssert.Fatal(_animationHead != null);
 				return _animationHead;
 			}
 		}
@@ -91,19 +113,36 @@ namespace LLT
         public bool GetPath(out string path)
         {
             path = string.Empty;
-            if(_tree != null)
+            if(_tree != null && _tag != null)
             {
-                CoreAssert.Fatal(_tag != null);
                 return _tree.RebuildPath(_tag, out path);
             }
             return false;
         }
-		
+
+		public EMObject FindObject(string path)
+		{
+			return _tree.FindObject(_tag, path.Split('/'));
+		}
+
 		public EMObject FindObject(params string[] path)
 		{
 			return _tree.FindObject(_tag, path);
 		}
 		
+        public EMObject FindFirstObject(string name)
+        {
+            return _tree.FindFirstObject(_tag, name);
+        }
+
+        public List<EMObject> Childs
+        {
+            get
+            {
+                return _tree.GetChilds(_tag);
+            }
+        }
+
 		public Bounds Bounds
 		{
 			get
@@ -143,10 +182,144 @@ namespace LLT
 					}
 				}
 				
-                retVal.min = _tree.Root.transform.localToWorldMatrix.MultiplyPoint(retVal.min);
-                retVal.max = _tree.Root.transform.localToWorldMatrix.MultiplyPoint(retVal.max);
+                if(retVal.size == Vector3.zero)
+                {
+                    retVal.center = new Vector3(iter.Sprite.LocalToWorld.M02, iter.Sprite.LocalToWorld.M12, 0f);
+                }
+
+                var absoluteRoot = AbsoluteRoot;
+                retVal.min = absoluteRoot.transform.localToWorldMatrix.MultiplyPoint(retVal.min);
+                retVal.max = absoluteRoot.transform.localToWorldMatrix.MultiplyPoint(retVal.max);
 				return retVal;
 			}
 		}
+
+        public T GetComponent<T>() 
+            where T : EMComponent
+        {
+            return _components.Find(x=>x is T) as T;
+        }
+
+        public T AddComponent<T>()
+            where T : EMComponent
+        {
+            var t = _tree.Root.gameObject.AddComponent<T>();
+            _components.Add(t);
+            t.Init(this);
+
+            return t;
+        }
+
+        public void AddSerializedComponent(EMAnimationHead animationHead)
+        {
+            _components.Add(animationHead);
+            _animationHead = animationHead;
+            _animationHead.Init(this);
+        }
+
+        public void AddSerializedComponent(EMComponent component)
+        {
+            _components.Add(component);
+            component.Init(this);
+        }
+
+        public void Destroy(EMComponent t)
+        {
+            _components.Remove(t);
+            GameObject.Destroy(t);
+        }
+
+        public EMRoot AbsoluteRoot 
+        {
+            get
+            {
+                var root = _tree.Root;
+                var parent = _tree.Root.Parent;
+                while(parent != null)
+                {
+                    root = parent.Root;
+                    parent = root.Parent;
+                }
+
+                return root;
+            }
+        }
+
+        public string Name
+        {
+            get
+            {
+                return _tree.GetName(_tag);
+            }
+        }
+
+        public int ChildCount
+        {
+            get
+            {
+                var iter = new EMDisplayTreeStreamDFSEnumerator(_tree.Root);
+                iter.Reset(_tag);
+                
+                if(iter.IsShape())
+                {
+                    return 1;
+                }
+
+                var childCount = 0;
+                var skipSubTree = false;
+                while(iter.MoveNext(skipSubTree))
+                {
+                    skipSubTree = false;
+                    childCount++;
+
+                    if(iter.IsSprite())
+                    {
+                        skipSubTree = true;
+                    }
+                }
+
+                return childCount;
+            }
+        }
+
+        public void Dispose()
+        {
+            _disposed = true;
+        }
+
+        public static bool operator==(EMObject left, EMObject right)
+        {
+            if(System.Object.ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if(System.Object.ReferenceEquals(left, null))
+            {
+                return right._disposed;
+            }
+
+            if(System.Object.ReferenceEquals(right, null))
+            {
+                return left._disposed;
+            }
+
+            return false;
+        }
+
+        public static bool operator!=(EMObject left, EMObject right)
+        {
+            return !(left == right);
+        }
+
+        public override bool Equals (object obj)
+        {
+            return base.Equals (obj);
+        }
+
+        public override int GetHashCode ()
+        {
+            return base.GetHashCode ();
+        }
 	}
 }

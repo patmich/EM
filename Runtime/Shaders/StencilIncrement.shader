@@ -12,12 +12,15 @@
 		ZWrite Off
 		ColorMask 0
 		AlphaTest Greater 0.5
+    	Cull Off
     	
     	Stencil 
 		{
 			Ref [_Ref]
-			Comp equal
-			Pass IncrSat
+			CompFront equal
+			CompBack equal
+			PassFront IncrSat
+			PassBack IncrSat
 		}
 
 	    Pass

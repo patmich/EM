@@ -19,7 +19,7 @@ namespace LLT
 					return _subEnumerator.Sprite;
 				}
 				
-				CoreAssert.Fatal(_currentTypeIndex == EMFactory.Type.EMSprite);
+                CoreAssert.Fatal((EMFactory.Type)Current.TypeIndex == EMFactory.Type.EMSprite);
 				
 				var current = Current;
 				if(_sprite.Position != current.EntryPosition)
@@ -38,7 +38,7 @@ namespace LLT
 					return _subEnumerator.Shape;
 				}
 				
-				CoreAssert.Fatal(_currentTypeIndex == EMFactory.Type.EMShape);
+                CoreAssert.Fatal((EMFactory.Type)Current.TypeIndex == EMFactory.Type.EMShape);
 				
 				var current = Current;
 				if(_shape.Position != current.EntryPosition)
@@ -121,7 +121,7 @@ namespace LLT
 					return _subEnumerator.Texture;
 				}
 
-				CoreAssert.Fatal(IsShape());
+                CoreAssert.Fatal((EMFactory.Type)Current.TypeIndex == EMFactory.Type.EMShape);
 				return _root.GetTexture(Shape.TextureIndex);
 			}
 		}

@@ -97,8 +97,10 @@ namespace LLT
 		[SerializeField]
 		private Texture[] _textures;
 		
-		[SerializeField]
 		private EMDisplayTreeStream _tree;
+
+        [SerializeField]
+        private Camera _camera;
 
 		private Mesh _mesh;
 		
@@ -114,11 +116,28 @@ namespace LLT
 		// ToDo need as many shared material multiple as mask depth.
 		private readonly Material[] _sharedMaterials = new Material[(int)ShaderType.Count * 2];
         private CoreTask _init;
-        
-#pragma warning disable 0414        
+
+		[SerializeField]
+		private bool _useCustomTransformUpdater;
+
+        public Camera Camera 
+        {
+            get
+            {
+                return _camera;
+            }
+        }
+             
         private EMDisplayTreeStream _parent;
-#pragma warning restore 0414
-        
+
+        public EMDisplayTreeStream Parent 
+        {
+            get
+            {
+                return _parent;
+            }
+        }
+
 		public ITSTreeStream DisplayTree
 		{
 			get
@@ -142,14 +161,17 @@ namespace LLT
 		
 		private void Awake()
 		{
-			_tree.UpdateFlag = EMUpdateFlag.Flag(EMUpdateFlag.Flags.InitMesh, EMUpdateFlag.Flags.UpdateDrawCalls);
-            
 			enabled = false;
             
             _init = CoreTask.Wrap(Init ());
 			StartCoroutine(_init);
 		}
 		
+        public EMObject FindObject(string path)
+        {
+            return _tree.FindObject(path.Split('/'));
+        }
+
 		public EMObject FindObject(params string[] path)
 		{
 			return _tree.FindObject(path);
@@ -168,7 +190,16 @@ namespace LLT
 				yield return null;
 			}
 			
+            _tree = new EMDisplayTreeStream();
+            _tree.UpdateFlag = EMUpdateFlag.Flag(EMUpdateFlag.Flags.InitMesh, EMUpdateFlag.Flags.UpdateDrawCalls);
 			_tree.Init(this, _bytes.bytes);
+
+			var iter = _tree.Iter as EMDisplayTreeStreamDFSEnumerator;
+			iter.Reset();
+			
+			iter.Sprite.LocalToWorld.MakeIdentity();
+			iter.Sprite.LocalToWorld.M11 = -1f;
+
 			enabled = true;
 		}
 		
@@ -187,8 +218,15 @@ namespace LLT
 
 				UpdateDrawcalls();
             }
-			
-			UpdateTransforms();
+
+			if(_useCustomTransformUpdater)
+			{
+				EMCustomTransformUpdater.UpdateTransforms(_tree.Ptr, _tree.RootTag.Position, _vertices, _colorAdd, _colorMult);
+			}
+			else
+			{
+				UpdateTransforms();
+			}
 
 			mesh.vertices = _vertices;
 			mesh.uv = _uv;
@@ -201,7 +239,7 @@ namespace LLT
 		private void InitMesh()
 		{
             ushort shapeCount = 0;
-			
+            ushort spriteCount = 0;
 			var iter = _tree.Iter as EMDisplayTreeStreamDFSEnumerator;
 			iter.Reset();
 			
@@ -211,8 +249,14 @@ namespace LLT
 				{
 					iter.Shape.ShapeIndex = shapeCount++;
 				}	
+                else if(iter.IsSprite())
+                {
+                    iter.Sprite.SpriteIndex = spriteCount++;
+                }
 			}
 			
+            CoreAssert.Fatal(shapeCount < ushort.MaxValue && spriteCount < ushort.MaxValue);
+
             if(shapeCount != _shapeCount)
             {
                 _shapeCount = shapeCount;
@@ -221,6 +265,31 @@ namespace LLT
                 _colorAdd = new Color32[_shapeCount * 4];
                 _colorMult = new Vector4[_shapeCount * 4];
             }
+
+			while(iter.MoveNext(false))
+			{
+				if(iter.IsShape()) 
+				{
+					var shape = iter.Shape;
+					var shapeIndex = iter.Shape.ShapeIndex;
+					var xmin = shape.Uv.X;
+					var ymin = shape.Uv.Y;
+					var xmax = xmin + shape.Uv.Width;
+					var ymax = ymin + shape.Uv.Height;
+					
+					_uv[shapeIndex * 4 + 0].x = xmin;
+					_uv[shapeIndex * 4 + 0].y = ymin;
+					
+					_uv[shapeIndex * 4 + 1].x = xmin;
+					_uv[shapeIndex * 4 + 1].y = ymax;
+					
+					_uv[shapeIndex * 4 + 2].x = xmax;
+					_uv[shapeIndex * 4 + 2].y = ymax;
+					
+					_uv[shapeIndex * 4 + 3].x = xmax;
+					_uv[shapeIndex * 4 + 3].y = ymin;
+				}	
+			}
 		}
 		
 		private void UpdateDrawcalls()
@@ -233,14 +302,16 @@ namespace LLT
 			
 			var iter = _tree.Iter as EMDisplayTreeStreamDFSEnumerator;
 			iter.Reset();
-			
+
+			var absolutePosition = 0;
+
 			while(iter.MoveNext(false))
 			{
-				while(mask.Count > 0 && mask[mask.Count - 1].End <= iter.Current.Position)
+				while(mask.Count > 0 && mask[mask.Count - 1].End <= absolutePosition)
 				{
 					mask.RemoveAt(mask.Count - 1);
 				}
-				while(masked.Count > 0 && masked[masked.Count - 1].End <= iter.Current.Position)
+				while(masked.Count > 0 && masked[masked.Count - 1].End <= absolutePosition)
 				{
 					AddDrawcall(ShaderType.StencilDecrement, masked[masked.Count - 1].StencilRef, null);	
 					masked.RemoveAt(masked.Count - 1);
@@ -249,30 +320,39 @@ namespace LLT
 				var clipDepth = iter.ClipDepth;
 				if(clipDepth > 0)
 				{
-					CoreAssert.Fatal(mask.Count == 0 || iter.Current.Position < mask[mask.Count - 1].End, "Expecting only one mask");
-					if(mask.Count == 0 || mask[mask.Count - 1].End <= iter.Current.Position)
+					CoreAssert.Fatal(mask.Count == 0 || absolutePosition < mask[mask.Count - 1].End, "Expecting only one mask");
+					if(mask.Count == 0 || mask[mask.Count - 1].End <= absolutePosition)
 					{
 						var depth = iter.Depth;
       
+						var tempAbsolutePosition = absolutePosition;
+
                         var siblingEnumerator = new EMDisplayTreeStreamDFSEnumerator(this, iter.Tree);
-                        siblingEnumerator.Reset(iter.ParentTag, iter.Current);
+						siblingEnumerator.Reset(iter.ParentTag, iter.Current);
                         
-						while(siblingEnumerator.MoveNext(true) && siblingEnumerator.Depth == depth);
+						while(siblingEnumerator.MoveNext(false))
+						{
+							tempAbsolutePosition += siblingEnumerator.Current.EntrySizeOf + TSTreeStreamTag.TSTreeStreamTagSizeOf;
 
-						var startMasked = siblingEnumerator.Current.Position;
-						var endMasked = startMasked;
+							if(siblingEnumerator.Index == 1 && siblingEnumerator.Depth != depth)
+							{
+								break;
+							}
+						}
 
-						mask.Add(new MaskOperation(){Start = (int)iter.Current.Position, End = startMasked, StencilRef = mask.Count});
+						var startMasked = tempAbsolutePosition;
+						mask.Add(new MaskOperation(){Start = absolutePosition, End = tempAbsolutePosition, StencilRef = mask.Count});
 					
-						if(siblingEnumerator.Depth <= clipDepth && siblingEnumerator.ClipDepth == 0)
+						while(siblingEnumerator.MoveNext(false))
 						{
-							endMasked = siblingEnumerator.Current.SiblingPosition;
+							tempAbsolutePosition += siblingEnumerator.Current.EntrySizeOf + TSTreeStreamTag.TSTreeStreamTagSizeOf;
+
+							if(siblingEnumerator.Index == 1 && (clipDepth < siblingEnumerator.Depth || siblingEnumerator.ClipDepth != 0))
+							{
+								break;
+							}
 						}
-						while(siblingEnumerator.MoveNext(true) && siblingEnumerator.Depth <= clipDepth && siblingEnumerator.ClipDepth == 0)
-						{
-							endMasked = siblingEnumerator.Current.SiblingPosition;
-						}
-						masked.Add(new MaskOperation(){Start = startMasked, End = endMasked, StencilRef = mask.Count});
+						masked.Add(new MaskOperation(){Start = startMasked, End = tempAbsolutePosition, StencilRef = mask.Count});
 					}
 				}
 				
@@ -282,7 +362,7 @@ namespace LLT
 					if(mask.Count > 0)
 					{
 						maskOperation = mask[mask.Count - 1];
-						if(mask[mask.Count - 1].Start <= iter.Current.Position && iter.Current.Position < mask[mask.Count - 1].End)
+						if(mask[mask.Count - 1].Start <= absolutePosition && absolutePosition < mask[mask.Count - 1].End)
 						{
 							AddDrawcall(ShaderType.StencilIncrement, maskOperation.StencilRef, iter.Texture);
 							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
@@ -298,7 +378,7 @@ namespace LLT
 						if(masked.Count > 0)
 						{
 							maskOperation = masked[masked.Count - 1];
-							CoreAssert.Fatal(masked[masked.Count - 1].Start <= iter.Current.Position && iter.Current.Position < masked[masked.Count - 1].End);
+							CoreAssert.Fatal(masked[masked.Count - 1].Start <= absolutePosition && absolutePosition < masked[masked.Count - 1].End);
 							AddDrawcall(ShaderType.Transparent, maskOperation.StencilRef, iter.Texture);
 							_drawcalls[_drawcalls.Count - 1].Add(iter.Shape.ShapeIndex);
 						}
@@ -311,6 +391,8 @@ namespace LLT
                     
                     iter.Shape.LocalToWorld.Placed = 0;
 				}	
+
+				absolutePosition += iter.Current.EntrySizeOf + TSTreeStreamTag.TSTreeStreamTagSizeOf;
 			}
 			
 			var mesh = Mesh;
@@ -326,9 +408,6 @@ namespace LLT
 		{
 			var iter = _tree.Iter as EMDisplayTreeStreamDFSEnumerator;
 			iter.Reset();
-
-			iter.Sprite.LocalToWorld.MakeIdentity();
-			iter.Sprite.LocalToWorld.M11 = -1f;
 
 			var drawCallIndex = 0;
 
@@ -526,76 +605,24 @@ namespace LLT
                 colorMult = new Vector4(ptr->LocalToWorld.MR/255f, ptr->LocalToWorld.MG/255f, ptr->LocalToWorld.MB/255f, ptr->LocalToWorld.MA/255f);
 			}
 	#endif
+
+			_vertices[shapeIndex * 4 + 0].x = m00 * xmin + m01 * ymax + m02;
+			_vertices[shapeIndex * 4 + 0].y = m10 * xmin + m11 * ymax + m12;
 			
-			if(m00 * m11 < 0)
-			{
-				_vertices[shapeIndex * 4 + 0].x = m00 * xmin + m01 * ymax + m02;
-				_vertices[shapeIndex * 4 + 0].y = m10 * xmin + m11 * ymax + m12;
-				
-				_vertices[shapeIndex * 4 + 1].x = m00 * xmin + m01 * ymin + m02;
-				_vertices[shapeIndex * 4 + 1].y = m10 * xmin + m11 * ymin + m12;
-				
-				_vertices[shapeIndex * 4 + 2].x = m00 * xmax + m01 * ymin + m02;
-				_vertices[shapeIndex * 4 + 2].y = m10 * xmax + m11 * ymin + m12;
-				
-				_vertices[shapeIndex * 4 + 3].x = m00 * xmax + m01 * ymax + m02;
-				_vertices[shapeIndex * 4 + 3].y = m10 * xmax + m11 * ymax + m12;
-				
-				xmin = shape.Uv.X;
-				ymin = shape.Uv.Y;
-				xmax = xmin + shape.Uv.Width;
-				ymax = ymin + shape.Uv.Height;
-				
-				_uv[shapeIndex * 4 + 0].x = xmin;
-				_uv[shapeIndex * 4 + 0].y = ymin;
-				
-				_uv[shapeIndex * 4 + 1].x = xmin;
-				_uv[shapeIndex * 4 + 1].y = ymax;
-				
-				_uv[shapeIndex * 4 + 2].x = xmax;
-				_uv[shapeIndex * 4 + 2].y = ymax;
-				
-				_uv[shapeIndex * 4 + 3].x = xmax;
-				_uv[shapeIndex * 4 + 3].y = ymin;
-			}
-			else
-			{
-				_vertices[shapeIndex * 4 + 0].x = m00 * xmin + m01 * ymin + m02;
-				_vertices[shapeIndex * 4 + 0].y = m10 * xmin + m11 * ymin + m12;
-				
-				_vertices[shapeIndex * 4 + 1].x = m00 * xmin + m01 * ymax + m02;
-				_vertices[shapeIndex * 4 + 1].y = m10 * xmin + m11 * ymax + m12;
-				
-				_vertices[shapeIndex * 4 + 2].x = m00 * xmax + m01 * ymax + m02;
-				_vertices[shapeIndex * 4 + 2].y = m10 * xmax + m11 * ymax + m12;
-				
-				_vertices[shapeIndex * 4 + 3].x = m00 * xmax + m01 * ymin + m02;
-				_vertices[shapeIndex * 4 + 3].y = m10 * xmax + m11 * ymin + m12;
-				
-				xmin = shape.Uv.X;
-				ymin = shape.Uv.Y;
-				xmax = xmin + shape.Uv.Width;
-				ymax = ymin + shape.Uv.Height;
-				
-				_uv[shapeIndex * 4 + 0].x = xmin;
-				_uv[shapeIndex * 4 + 0].y = ymax;
-				
-				_uv[shapeIndex * 4 + 1].x = xmin;
-				_uv[shapeIndex * 4 + 1].y = ymin;
-				
-				_uv[shapeIndex * 4 + 2].x = xmax;
-				_uv[shapeIndex * 4 + 2].y = ymin;
-				
-				_uv[shapeIndex * 4 + 3].x = xmax;
-				_uv[shapeIndex * 4 + 3].y = ymax;
-			}
+			_vertices[shapeIndex * 4 + 1].x = m00 * xmin + m01 * ymin + m02;
+			_vertices[shapeIndex * 4 + 1].y = m10 * xmin + m11 * ymin + m12;
+			
+			_vertices[shapeIndex * 4 + 2].x = m00 * xmax + m01 * ymin + m02;
+			_vertices[shapeIndex * 4 + 2].y = m10 * xmax + m11 * ymin + m12;
+			
+			_vertices[shapeIndex * 4 + 3].x = m00 * xmax + m01 * ymax + m02;
+			_vertices[shapeIndex * 4 + 3].y = m10 * xmax + m11 * ymax + m12;
             
             _colorAdd[shapeIndex * 4 + 0] = colorAdd;
             _colorAdd[shapeIndex * 4 + 1] = colorAdd;
             _colorAdd[shapeIndex * 4 + 2] = colorAdd;
             _colorAdd[shapeIndex * 4 + 3] = colorAdd;
-            
-			
+
             _colorMult[shapeIndex * 4 + 0] = colorMult;
             _colorMult[shapeIndex * 4 + 1] = colorMult;
             _colorMult[shapeIndex * 4 + 2] = colorMult;
@@ -604,7 +631,6 @@ namespace LLT
 		
 		private void AddDrawcall(ShaderType shaderType, int stencilRef, Texture texture)
 		{
-
 			var index = (int)shaderType + (int)ShaderType.Count * stencilRef;
 			CoreAssert.Fatal(index < _sharedMaterials.Length);
 			if(_sharedMaterials[index] == null)
@@ -635,7 +661,7 @@ namespace LLT
     				{
     					Graphics.Blit(null, _drawcalls[drawcallIndex].Material);
     				}
-					else if(_drawcalls[drawcallIndex].Placed > 0)
+					else if(_drawcalls[drawcallIndex].Placed > 0 || _useCustomTransformUpdater)
     				{
                         _drawcalls[drawcallIndex].Material.mainTexture = _drawcalls[drawcallIndex].Texture;
     					_drawcalls[drawcallIndex].Material.SetPass(0);
@@ -672,7 +698,10 @@ namespace LLT
         
 		private void OnDestroy()
 		{
-            _tree.Dispose();
+            if(_tree != null)
+            {
+                _tree.Dispose();
+            }
 		}
 	}
 }

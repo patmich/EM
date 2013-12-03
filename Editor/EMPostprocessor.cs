@@ -14,9 +14,26 @@ namespace LLT
 	public sealed class EMPostprocessor : AssetPostprocessor
 	{
 		private static Dictionary<string, IEnumerator> _importers;
-		
-		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+
+		[MenuItem("Assets/Import Swf")]
+		public static void ImportSwf()
 		{
+			if(Selection.activeObject == null)
+			{
+				return;
+			}
+
+			var path = AssetDatabase.GetAssetPath(Selection.activeObject);
+			string[] importedAssets;
+			if(Path.GetExtension(path) == ".swf")
+			{
+				importedAssets = new string[]{path};
+			}
+			else
+			{
+				importedAssets = Directory.GetFiles(Path.GetDirectoryName(path), "*.swf", SearchOption.AllDirectories);
+			}
+
 			if(importedAssets.FirstOrDefault(x=>Path.GetExtension(x) == ".swf") != string.Empty)
 			{
 				var dependencyCheck = EMSettings.Instance.DependencyCheck();

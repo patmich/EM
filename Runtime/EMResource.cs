@@ -27,21 +27,25 @@ namespace LLT
 			_instance.transform.parent = transform;
 			_instance.transform.localPosition = Vector3.zero;
 			_instance.transform.localScale = Vector3.one;
-            
+			_instance.layer = gameObject.layer;
+
             _root = _instance.GetComponent<EMRoot>();
 		}
         
         public static EMResource Load(string path)
         {
-            var prefab = Resources.Load(path);
+            var prefab = Resources.Load(path) as GameObject;
             CoreAssert.Fatal(prefab != null);
             
-            var go = Instantiate(prefab) as GameObject;
-            CoreAssert.Fatal(go != null);
+            var instance = Instantiate(prefab) as GameObject;
+            CoreAssert.Fatal(instance != null);
             
-            var resource = go.GetComponent<EMResource>();
+            var resource = instance.GetComponent<EMResource>();
             CoreAssert.Fatal(resource != null);
-            
+
+            resource._prefab = prefab;
+            resource._instance = instance;
+
             return resource;
         }
 	}

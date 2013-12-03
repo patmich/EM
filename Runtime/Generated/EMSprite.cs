@@ -34,7 +34,8 @@ namespace LLT
 		public const int LocalToWorld_Placed_Offset = 68;
 		public const int Depth_Offset = 72;
 		public const int ClipDepth_Offset = 74;
-		public const int UpdateFlag_Offset = 76;
+		public const int SpriteIndex_Offset = 76;
+		public const int UpdateFlag_Offset = 78;
 		public const int EMSpriteSizeOf = 80;
 
 		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
@@ -62,15 +63,26 @@ namespace LLT
 				_tree.Write(_position + 72, value);
 			}
 		}
-		public byte UpdateFlag
+		public ushort SpriteIndex
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 74);
+				return _tree.ReadUInt16(_position + 74);
 			}
 			set
 			{
 				_tree.Write(_position + 74, value);
+			}
+		}
+		public byte UpdateFlag
+		{
+			get
+			{
+				return _tree.ReadByte(_position + 76);
+			}
+			set
+			{
+				_tree.Write(_position + 76, value);
 			}
 		}
 

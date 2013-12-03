@@ -7,7 +7,7 @@ namespace LLT
 	public sealed class EMAnimationHead : EMComponent, ICoreTimeline
 	{
 		[SerializeField]
-		private TextAsset _data;
+		private EMAnimationHeadData _data;
 		
 		private TSTreeStreamEntry _entry;
         private readonly List<int> _positions = new List<int>();
@@ -20,7 +20,19 @@ namespace LLT
        
         [SerializeField]
         private bool _loop = true;
-        
+
+        public bool Loop 
+        {
+            get
+            {
+                return _loop;
+            }
+            set
+            {
+                _loop = value;
+            }
+        }
+
         private Dictionary<string, IEnumerator> _wait;
         
 #if !ALLOW_UNSAFE
@@ -29,12 +41,17 @@ namespace LLT
 #endif
 		
 		private float _time;
-		private float _speed;
+		private float _speed = 1f;
         
 		public override void Init(EMObject obj)
 		{
-			base.Init(obj);
-			
+            base.Init(obj);
+		    
+            if(_data == null)
+            {
+                return;
+            }
+
 			_entry = new TSTreeStreamEntry();
 			_entry.Init(_object.Tree);
 		
@@ -49,7 +66,7 @@ namespace LLT
 			}
 			
 			_animationTree = new EMAnimationTreeStream();
-			_animationTree.Init(_data.bytes);
+			_animationTree.Init(_data.Bytes);
 			
 			var clipEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
 			clipEnumerator.Init(_animationTree.RootTag);
@@ -66,6 +83,12 @@ namespace LLT
 			_keyframeValuesEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
 #endif
 		}
+
+        public override void InitSerializedComponent(EMDisplayTreeStream tree)
+        {
+            _object = tree.GetObject(tree.CreateTag(_initialPosition)) as EMObject;
+            _object.AddSerializedComponent(this);
+        }
 		
         public void GotoAndPlay(string label)
         {
@@ -110,12 +133,20 @@ namespace LLT
 		
         private IEnumerator Wait(string label)
         {
-            while(!_loop && _label == label && _time < _animationClip.Length)yield return null;
+            while(!_loop && _label == label && _time < _animationClip.Length)
+			{
+				yield return null;
+			}
             _wait.Remove(_label);
         }
        
 		private void Update()
 		{
+            if(_object == null)
+            {
+                return;
+            }
+
 			CoreAssert.Fatal(_object.Sprite != null);
 			if(_object.Sprite.LocalToWorld.Placed == 0)
 			{
@@ -125,7 +156,7 @@ namespace LLT
 			{
 				return;
 			}
-			
+
             _time += UnityEngine.Time.deltaTime * _speed;
 			if(_time > _animationClip.Length)
 			{
@@ -240,7 +271,7 @@ namespace LLT
             }
             set
             {
-                _time = value % (_animationClip.Length);
+                _time = Mathf.Clamp(value, 0f, _animationClip.Length);
                 _keyframesEnumerator.Reset();
                 _keyframesEnumerator.MoveNext();
             }

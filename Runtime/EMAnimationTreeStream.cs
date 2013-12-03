@@ -9,17 +9,6 @@ namespace LLT
 	{
 		private EMTreeStreamDFSEnumerator  _iter;
 		
-		[SerializeField]
-		private List<TSObject> _objects = new List<TSObject>();
-		
-		protected override List<TSObject> Objects
-		{
-			get
-			{
-				return _objects;
-			}
-		}
-		
 		public override ITSTreeStreamDFSEnumerator Iter
 		{
 			get

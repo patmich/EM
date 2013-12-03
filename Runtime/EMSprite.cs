@@ -9,7 +9,8 @@ namespace LLT
 	[TSLayout(typeof(EMTransform), "LocalToWorld", 1)]
 	[TSLayout(typeof(ushort), "Depth", 2)]
 	[TSLayout(typeof(ushort), "ClipDepth", 3)]
-	[TSLayout(typeof(byte), "UpdateFlag", 4)]
+    [TSLayout(typeof(ushort), "SpriteIndex", 4)]
+	[TSLayout(typeof(byte), "UpdateFlag", 5)]
 	public sealed partial class EMSprite : TSTreeStreamEntry
 	{
 		public new int FactoryTypeIndex 
@@ -50,21 +51,28 @@ namespace LLT
             var displayTree = _tree as EMDisplayTreeStream;
             
             var go = GameObject.Instantiate(prefab) as GameObject;
-            var root = go.GetComponent<EMRoot>();
+           
             go.transform.parent = displayTree.Root.transform;
             go.transform.localPosition = Vector3.zero;
             go.transform.localRotation = Quaternion.identity;
             go.transform.localScale = Vector3.one;
-            
-            var link = root.Link(displayTree);
-            while(link.MoveNext())yield return null;
-            
-            displayTree.UpdateFlag |= EMUpdateFlag.Flag(EMUpdateFlag.Flags.InitMesh, EMUpdateFlag.Flags.UpdateDrawCalls);
-            
-            var tag = new TSTreeStreamTag(_tree);
-            tag.Position = Position - TSTreeStreamTag.TSTreeStreamTagSizeOf;
-            
-            _tree.Link(tag, link.Current);
+
+            var root = go.GetComponent<EMRoot>();
+
+            if(root != null)
+            {
+                var link = root.Link(displayTree);
+                while(link.MoveNext())yield return null;
+                
+                displayTree.UpdateFlag |= EMUpdateFlag.Flag(EMUpdateFlag.Flags.InitMesh, EMUpdateFlag.Flags.UpdateDrawCalls);
+                
+                var tag = new TSTreeStreamTag(_tree);
+                tag.Position = Position - TSTreeStreamTag.TSTreeStreamTagSizeOf;
+                
+                _tree.Link(tag, link.Current);
+            }
+
+
         }
         
 				

@@ -10,12 +10,15 @@
 		Blend SrcAlpha OneMinusSrcAlpha
 		ZWrite Off
 		ColorMask 0
+		Cull Off
 		
 		Stencil 
 		{
 			Ref [_Ref]
-			Comp equal
-			Pass DecrSat
+			CompFront equal
+			CompBack equal
+			PassFront DecrSat
+			PassBack DecrSat
 		}
 
 	    Pass

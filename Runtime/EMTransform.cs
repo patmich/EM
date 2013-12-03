@@ -48,5 +48,27 @@ namespace LLT
 			M12 = localToWorld.M10 * transform.M02 + localToWorld.M11 * transform.M12 + localToWorld.M12;
 			Placed = (byte)(localToWorld.Placed & transform.Placed);
 		}
+
+        public UnityEngine.Matrix4x4 Inverse()
+        {
+            var mat = Matrix4x4.identity;
+            mat.m00 = M00;
+            mat.m01 = M01;
+            mat.m03 = M02;
+            mat.m10 = M10;
+            mat.m11 = M11;
+            mat.m13 = M12;
+            return mat.inverse;
+        }
+
+        public void Set(Matrix4x4 mat)
+        {
+            M00 = mat.m00;
+            M01 = mat.m01;
+            M02 = mat.m02;
+            M10 = mat.m10;
+            M11 = mat.m11;
+            M12 = mat.m12;
+        }
 	}
 }
