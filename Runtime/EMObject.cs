@@ -18,8 +18,10 @@ namespace LLT
 
 		private EMDisplayTreeStream _tree;
 		private TSTreeStreamTag _tag;
+
 		private EMSprite _sprite;
-		
+		private EMShape _shape;
+
         private bool _disposed;
 
         public EMRoot Root
@@ -29,6 +31,31 @@ namespace LLT
                 return _tree.Root;
             }
         }
+
+		public EMTransform Transform
+		{
+			get
+			{
+				var type = (EMFactory.Type)_tag.TypeIndex;
+				if(type == EMFactory.Type.EMShape)
+				{
+					if(_shape == null)
+					{
+						_shape = new EMShape();
+						_shape.Init(_tree);
+						_shape.Position = _tag.EntryPosition;
+					}
+
+					return _shape.Transform;
+				}
+				else if(type == EMFactory.Type.EMSprite)
+				{
+					return _sprite.Transform;
+				}
+
+				return null;
+			}
+		}
 
 		public EMSprite Sprite 
 		{
@@ -141,6 +168,11 @@ namespace LLT
             {
                 return _tree.GetChilds(_tag);
             }
+        }
+
+        public void FillChilds(List<EMObject> childs)
+        {
+            _tree.FillChilds(_tag, childs);
         }
 
 		public Bounds Bounds

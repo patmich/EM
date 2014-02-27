@@ -8,6 +8,7 @@ Shader "LLT/Transparent"
 	}
 	SubShader 
 	{ 
+		Tags { "Queue"="Transparent" "RenderType"="Transparent" }
 		Blend SrcAlpha OneMinusSrcAlpha
 		ZWrite Off
 		Cull Off

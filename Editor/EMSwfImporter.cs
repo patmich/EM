@@ -82,19 +82,26 @@ namespace LLT
 		            }
 				}
 	        }
-			
+
+			foreach (var root in _classes)
+			{
+				var defineSprite = root.Value as EMSwfDefineSprite;
+				defineSprite.Expand(1f, 1f);
+			}
 
 			Raster();
 			
 			// Create text asset and wait for reference to exist.
 			foreach (var sprite in GetObjects<EMSwfDefineSprite>())
 			{
-				sprite.Expand();
 				if(sprite.AnimationCurves.Count > 0)
 				{
 					using (var tree = new EMAnimationTreeStream())
 		            {
-						tree.InitFromTree(new EMSwfAnimation(header.FrameRate, sprite), null, new EMFactory());
+						byte[] buffer;
+						List<KeyValuePair<ITSTreeNode, int>> positions;
+
+						TSTreeStreamBuilder.Build(new EMSwfAnimation(header.FrameRate, sprite), null, new EMFactory(), out buffer, out positions);
 
 						var animationHeadData = ScriptableObject.CreateInstance<EMAnimationHeadData>();
 						animationHeadData.Bytes = tree.GetAllBytes();
@@ -143,7 +150,11 @@ namespace LLT
 						}
 						rootComponent.enabled = false;
 
-						var positions = tree.InitFromTree(rootComponent, new EMSwfDefineSpriteNode(root.Key, true, 0, EMSwfMatrix.Identity, EMSwfColorTransform.Identity, 0, defineSprite), null, new EMFactory());
+						byte[] buffer;
+						List<KeyValuePair<ITSTreeNode, int>> positions;
+
+						TSTreeStreamBuilder.Build(new EMSwfDefineSpriteNode(root.Key, true, 0, EMSwfMatrix.Identity, EMSwfColorTransform.Identity, 0, defineSprite, 1f, 1f), null, new EMFactory(), out buffer, out positions);
+
 						var index = 0;
 						var atlas = string.Empty;
 						var textures = new List<Texture>();
@@ -174,6 +185,7 @@ namespace LLT
 								var animationHeadData = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + spriteNode.Id + ".anim.asset");
 
 								var animationHead = obj.AddComponent<EMAnimationHead>();
+								animationHead.hideFlags = HideFlags.HideInInspector;
 
 								field = typeof(EMAnimationHead).GetField("_data", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 								field.SetValue(animationHead, animationHeadData);
@@ -227,7 +239,7 @@ namespace LLT
 	        Directory.CreateDirectory(_temporaryFolder);
 			
 			var shapes = GetObjects<EMSwfDefineShape>().OrderBy(x=>x.Id).ToArray();
-			
+			var swfSettings = EMSwfSettings.Get(_source);
 	        using (var stream = new EMSwfMemoryStream())
 	        {
 	            var binaryWriter = new EMSwfBinaryWriter(stream);
@@ -247,15 +259,20 @@ namespace LLT
 				}
 				
 	            ushort frameCount = 0;
-				
+
 				// ToDO: Add dependency check.
 	            foreach (var shape in shapes)
 	            {
 	                (new EMSwfFrameLabel(shape.Id.ToString())).Write(binaryWriter);
 	
 	                shape.Write(binaryWriter);
-	
 	                var matrix = EMSwfMatrix.Identity;
+
+					if(swfSettings.Dpi < 0)
+					{
+						matrix.M00 = Mathf.Max(shape.ScaleX, shape.ScaleY);
+						matrix.M11 = Mathf.Max(shape.ScaleX, shape.ScaleY);
+					}
 	                matrix.M02 = -shape.Bounds.XMin;
 	                matrix.M12 = -shape.Bounds.YMin;
 	                (new EMSwfPlaceObject2(0, shape.Id, matrix)).Write(binaryWriter);
@@ -296,7 +313,7 @@ namespace LLT
 	                                                   "Raster-app.xml",
 	                                                   Path.GetFullPath(destination),
 	                                                   Path.GetFullPath(_temporaryFolder),
-	                                                   "72",
+			                                           swfSettings.Dpi > 0 ? swfSettings.Dpi : 72,
 	                                                   padding.ToString(),
 	                                                   "10"
 	                                                   );
@@ -325,7 +342,7 @@ namespace LLT
 						original.ARGB[i] = info.ARGB[i] & 0x00FFFFFF;
 					}
 				}
-				
+
 				original.Save(file);
 			}
 			
@@ -343,7 +360,59 @@ namespace LLT
 				CoreRect[] uv;
 		
 				textures = CoreTexture2D.Pack(textures, padding, out atlas, out uv);
-				
+			
+				for(var i = 0; i < uv.Length; i++)
+				{
+					if(uv[i] != null)
+					{
+						for(var j = 1; j < padding; j++)
+						{
+							var startY = -j + Mathf.RoundToInt(uv[i].Y * atlas.Height);
+							var endY = startY + Mathf.RoundToInt(uv[i].Height * atlas.Height) + 2 * j - 1;
+							var temp = atlas.ARGB.ToArray();
+							for(var y = startY; y <= endY; y++)
+							{
+								var startX = -j + Mathf.RoundToInt(uv[i].X * atlas.Width);
+								var endX = startX + Mathf.RoundToInt(uv[i].Width * atlas.Width) + 2 * j - 1;
+								for(var x = startX; x <= endX; x++)
+								{
+									if(x == startX || y == startY || x == endX || y == endY)
+									{
+										var r0 = atlas.ARGB[(x - 1) + y * atlas.Width];
+										var r1 = atlas.ARGB[(x + 1) + y * atlas.Width];
+										var r2 = atlas.ARGB[(x) + (y - 1) * atlas.Width];
+										var r3 = atlas.ARGB[(x) + (y + 1) * atlas.Width];
+										var r4 = 0;
+										var r5 = 0;
+										var r6 = 0;
+										var r7 = 0;
+
+										if((x == startX && y == startY) || (x == startX && y == endY) || (x == endX && y == startY) || (x == endX && y == endY))
+										{
+											r4 = atlas.ARGB[(x - 1) + (y - 1) * atlas.Width];
+											r5 = atlas.ARGB[(x + 1) + (y + 1) * atlas.Width];
+											r6 = atlas.ARGB[(x + 1) + (y - 1) * atlas.Width];
+											r7 = atlas.ARGB[(x - 1) + (y + 1) * atlas.Width];
+										}
+
+										var c0 = (Color)(new Color32((byte)((r0 >> 16) & 0xFF), (byte)((r0 >> 8) & 0xFF), (byte)((r0 >> 0) & 0xFF), (byte)((r0 >> 24) & 0xFF)));
+										var c1 = (Color)(new Color32((byte)((r1 >> 16) & 0xFF), (byte)((r1 >> 8) & 0xFF), (byte)((r1 >> 0) & 0xFF), (byte)((r1 >> 24) & 0xFF)));
+										var c2 = (Color)(new Color32((byte)((r2 >> 16) & 0xFF), (byte)((r2 >> 8) & 0xFF), (byte)((r2 >> 0) & 0xFF), (byte)((r2 >> 24) & 0xFF)));
+										var c3 = (Color)(new Color32((byte)((r3 >> 16) & 0xFF), (byte)((r3 >> 8) & 0xFF), (byte)((r3 >> 0) & 0xFF), (byte)((r3 >> 24) & 0xFF)));
+										var c4 = (Color)(new Color32((byte)((r4 >> 16) & 0xFF), (byte)((r4 >> 8) & 0xFF), (byte)((r4 >> 0) & 0xFF), (byte)((r4 >> 24) & 0xFF)));
+										var c5 = (Color)(new Color32((byte)((r5 >> 16) & 0xFF), (byte)((r5 >> 8) & 0xFF), (byte)((r5 >> 0) & 0xFF), (byte)((r5 >> 24) & 0xFF)));
+										var c6 = (Color)(new Color32((byte)((r6 >> 16) & 0xFF), (byte)((r6 >> 8) & 0xFF), (byte)((r6 >> 0) & 0xFF), (byte)((r6 >> 24) & 0xFF)));
+										var c7 = (Color)(new Color32((byte)((r7 >> 16) & 0xFF), (byte)((r7 >> 8) & 0xFF), (byte)((r7 >> 0) & 0xFF), (byte)((r7 >> 24) & 0xFF)));
+										var a = c0.a + c1.a + c2.a + c3.a + c4.a + c5.a + c6.a + c7.a;
+										var o = (Color32)((c0 * c0.a + c1 * c1.a + c2 * c2.a + c3 * c3.a + c4 * c4.a + c5 * c5.a + c6 * c6.a + c7 * c7.a)/a);
+										temp[x + y * atlas.Width] = (o.a << 24) | (o.r << 16) | (o.g << 8) | o.b;
+									}
+								}
+							}
+							Array.Copy(temp, 0, atlas.ARGB, 0, temp.Length);
+						}
+					}
+				}
 		        atlas.Save(string.Format("{0}/atlas{1}.png", _destinationFolder, textureIndex));
 				
 				for(var i = 0; i < uv.Length; i++)

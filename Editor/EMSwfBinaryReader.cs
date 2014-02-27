@@ -90,8 +90,15 @@ public class EMSwfBinaryReader : BinaryReader
         }
         else
         {
-            _stream.Position = (int)Math.Ceiling(_position / 8f);
-            _position = 0;
+			if((_position % 8) == 0)
+			{
+				_stream.Position = _position / 8;
+			}
+			else
+			{
+				_stream.Position = _position / 8 + ((_position % 8 == 0) ? 0 : 1);
+			}
+			_position = 0;
         }
     }
     public new string ReadString()

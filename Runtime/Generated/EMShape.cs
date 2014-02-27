@@ -42,10 +42,11 @@ namespace LLT
 		public const int Uv_Height_Offset = 100;
 		public const int Depth_Offset = 104;
 		public const int ClipDepth_Offset = 106;
-		public const int ShapeIndex_Offset = 108;
-		public const int TextureIndex_Offset = 110;
-		public const int UpdateFlag_Offset = 111;
-		public const int EMShapeSizeOf = 112;
+		public const int DrawcallIndex_Offset = 108;
+		public const int ShapeIndex_Offset = 110;
+		public const int TextureIndex_Offset = 112;
+		public const int UpdateFlag_Offset = 113;
+		public const int EMShapeSizeOf = 116;
 
 		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
 		public readonly LLT.EMTransform LocalToWorld = new LLT.EMTransform();
@@ -74,7 +75,7 @@ namespace LLT
 				_tree.Write(_position + 106, value);
 			}
 		}
-		public ushort ShapeIndex
+		public ushort DrawcallIndex
 		{
 			get
 			{
@@ -85,26 +86,37 @@ namespace LLT
 				_tree.Write(_position + 108, value);
 			}
 		}
-		public byte TextureIndex
+		public ushort ShapeIndex
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 110);
+				return _tree.ReadUInt16(_position + 110);
 			}
 			set
 			{
 				_tree.Write(_position + 110, value);
 			}
 		}
+		public byte TextureIndex
+		{
+			get
+			{
+				return _tree.ReadByte(_position + 112);
+			}
+			set
+			{
+				_tree.Write(_position + 112, value);
+			}
+		}
 		public byte UpdateFlag
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 111);
+				return _tree.ReadByte(_position + 113);
 			}
 			set
 			{
-				_tree.Write(_position + 111, value);
+				_tree.Write(_position + 113, value);
 			}
 		}
 
@@ -137,7 +149,7 @@ namespace LLT
 		{
 			get
 			{
-				return 112;
+				return 116;
 			}
 		}
 	}

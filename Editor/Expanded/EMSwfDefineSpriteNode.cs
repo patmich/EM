@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-
+using System.Text.RegularExpressions;
 namespace LLT
 {
 	public sealed class EMSwfDefineSpriteNode : ITSTreeNode
@@ -14,7 +14,7 @@ namespace LLT
 	    private EMSwfDefineSprite _defineSprite;
 		private int _clipDepth;
 		
-	    internal EMSwfDefineSpriteNode(string name, bool placed, int depth, EMSwfMatrix matrix, EMSwfColorTransform cxForm, int clipDepth, EMSwfDefineSprite defineSprite)
+	    internal EMSwfDefineSpriteNode(string name, bool placed, int depth, EMSwfMatrix matrix, EMSwfColorTransform cxForm, int clipDepth, EMSwfDefineSprite defineSprite, float scaleX, float scaleY)
 	    {
 	        _name = name;
 			_placed = placed;
@@ -23,7 +23,8 @@ namespace LLT
 			_cxForm = cxForm;
 			_clipDepth = clipDepth;
 	        _defineSprite = defineSprite;
-			_defineSprite.Expand();
+
+			_defineSprite.Expand(scaleX * matrix.M00, scaleY * matrix.M11);
 		}
 	
 	    public System.Collections.Generic.List<ITSTreeNode> Childs
@@ -46,6 +47,10 @@ namespace LLT
 	    {
 	        get
 	        {
+				if(Regex.IsMatch(_name, "[0-9]+-[0-9]+"))
+				{
+					return string.Empty;
+				}
 	            return _name;
 	        }
 			set

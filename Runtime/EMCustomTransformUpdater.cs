@@ -2,10 +2,15 @@ using System;
 using UnityEngine;
 using LLT;
 using System.Collections.Generic;
-
+using System.Runtime.InteropServices;
 public static class EMCustomTransformUpdater
 {
-	public static void UpdateTransforms(IntPtr ptr, int rootTag, Vector3[] vertices, Color32[] colorAdds, Vector4[] colorMults)
+    private const int _depth = 64;
+
+    // ToDo Pat: Remove.
+    private static int[] _tempParentTags = new int[_depth];
+
+	public static void UpdateTransforms(IntPtr ptr, int rootTag, Vector3[] vertices, Color32[] colorAdds, Vector4[] colorMults, int[] placed)
 	{ 
 #if ALLOW_UNSAFE
 		unsafe
@@ -15,8 +20,11 @@ public static class EMCustomTransformUpdater
 			TSTreeStreamTagStructLayout* rootTagPtr = (TSTreeStreamTagStructLayout*)((byte*)ptr.ToPointer() + rootTag);
 			TSTreeStreamTagStructLayout debugRoot = *rootTagPtr;
 
-			// ToDo: should be of variable size and shared instance of creating a new one every frame.
-			TSTreeStreamTagStructLayout*[] parentTagsPtr = new TSTreeStreamTagStructLayout*[64];
+            // ToDo: should be of variable size and shared instance of creating a new one every frame.
+            Array.Clear(_tempParentTags, 0, _tempParentTags.Length);
+            var handle = GCHandle.Alloc(_tempParentTags, GCHandleType.Pinned);
+            
+            TSTreeStreamTagStructLayout** parentTagsPtr = (TSTreeStreamTagStructLayout**)handle.AddrOfPinnedObject().ToPointer();
 			parentTagsPtr[0] = rootTagPtr;
 
 			EMSpriteStructLayout* parentPtr = (EMSpriteStructLayout*)((byte*)rootTagPtr + TSTreeStreamTag.TSTreeStreamTagSizeOf);
@@ -102,6 +110,19 @@ public static class EMCustomTransformUpdater
 						currentPtr->LocalToWorld.Placed = 0;
 					}
 
+                    if(currentPtr->LocalToWorld.Placed != temp)
+                    {
+                        CoreAssert.Fatal(currentPtr->DrawcallIndex < placed.Length);
+                        if(currentPtr->LocalToWorld.Placed > 0)
+                        {
+                            placed[currentPtr->DrawcallIndex]++;
+                        }
+                        else
+                        {
+                            placed[currentPtr->DrawcallIndex]--;
+                        }
+                    }
+
 					if(currentPtr->LocalToWorld.Placed == 0 && temp == 0)
 					{
 						skipSubTree = true;
@@ -172,17 +193,21 @@ public static class EMCustomTransformUpdater
 				
 				if((byte*)tagPtr < (byte*)previousTagPtr + TSTreeStreamTag.TSTreeStreamTagSizeOf + previousTagPtr->EntrySizeOf + previousTagPtr->SubTreeSizeOf)
 				{
+                    CoreAssert.Fatal(index < _depth - 1);
 					parentTagsPtr[++index] = previousTagPtr;
 				}
 
 				while(((byte*)tagPtr >= (byte*)parentTagsPtr[index] + TSTreeStreamTag.TSTreeStreamTagSizeOf + parentTagsPtr[index]->EntrySizeOf + parentTagsPtr[index]->SubTreeSizeOf))
 				{
-					if(--index == 0)
+					if(--index < 0)
 					{
+                        handle.Free();
 						return;
 					}
 				}
 			}
+
+            handle.Free();
 		}	
 #endif
 	}

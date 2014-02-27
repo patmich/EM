@@ -9,8 +9,9 @@ namespace LLT
 	[TSLayout(typeof(ushort), "Depth", 4)]
 	[TSLayout(typeof(ushort), "ClipDepth", 5)]
     [TSLayout(typeof(ushort), "ShapeIndex", 6)]
-	[TSLayout(typeof(byte), "TextureIndex", 7)]
-	[TSLayout(typeof(byte), "UpdateFlag", 8)]
+    [TSLayout(typeof(ushort), "DrawcallIndex", 7)]
+	[TSLayout(typeof(byte), "TextureIndex", 8)]
+	[TSLayout(typeof(byte), "UpdateFlag", 9)]
 	public sealed partial class EMShape : TSTreeStreamEntry
 	{
 		public new int FactoryTypeIndex 

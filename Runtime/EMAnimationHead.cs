@@ -6,6 +6,19 @@ namespace LLT
 {
 	public sealed class EMAnimationHead : EMComponent, ICoreTimeline
 	{
+		private class EMXYLinearInterpolation
+		{
+			public float XStart { get; set; }
+			public float YStart { get; set; }
+			public float XEnd { get; set; }
+			public float YEnd { get; set; }
+
+			public Vector2 Lerp(float t)
+			{
+				return new Vector2(Mathf.Lerp(XStart, XEnd, t), Mathf.Lerp(YStart, YEnd, t));
+			}
+		}
+
 		[SerializeField]
 		private EMAnimationHeadData _data;
 		
@@ -16,6 +29,8 @@ namespace LLT
 		private TSTreeStreamSiblingEnumerator _keyframesEnumerator;
   
         private string _label;
+		public string Label { get { return _label; } }
+
         private float _realTimeSinceStartup;
        
         [SerializeField]
@@ -43,6 +58,8 @@ namespace LLT
 		private float _time;
 		private float _speed = 1f;
         
+		private List<EMXYLinearInterpolation> _xyLinearInterpolation;
+
 		public override void Init(EMObject obj)
 		{
             base.Init(obj);
@@ -62,7 +79,7 @@ namespace LLT
 			
 			while(childs.MoveNext())
 			{
-				_positions.Add(childs.Current.EntryPosition);
+				_positions.Add(childs.Current.Position);
 			}
 			
 			_animationTree = new EMAnimationTreeStream();
@@ -92,12 +109,21 @@ namespace LLT
 		
         public void GotoAndPlay(string label)
         {
-            GotoAndPlay(label, true);
+            GotoAndPlay(label, 0f, true);
         }
         
         public void GotoAndPlay(string label, bool loop)
         {
-            var tag = _animationTree.FindTag(label);
+			GotoAndPlay(label, 0f, loop);
+        }
+		public void GotoAndStop(float time)
+		{
+			_speed = 0f;
+			GotoAndPlay(Label, time, true);
+		}
+		public void GotoAndPlay(string label, float time, bool loop)
+		{
+			var tag = _animationTree.FindTag(label);
 			if(tag != null)
 			{
 				_label = label;
@@ -108,9 +134,9 @@ namespace LLT
 	            enabled = _keyframesEnumerator.MoveNext();
 	           
 	            _loop = loop;
-	            _time = 0f;
+				_time = time;
 			}
-        }
+		}
         
 		public IEnumerator GotoAndPlayWait(string label)
 		{
@@ -140,7 +166,7 @@ namespace LLT
             _wait.Remove(_label);
         }
        
-		private void Update()
+		public void ExplicitUpdate()
 		{
             if(_object == null)
             {
@@ -171,76 +197,122 @@ namespace LLT
                     _time = _animationClip.Length;
                 }
 			}
-#if !ALLOW_UNSAFE
-#else
+
+			Seek();
+		}
+
+
+        private readonly List<EMObject> _childs = new List<EMObject>();
+		private void Seek()
+		{
+			#if !ALLOW_UNSAFE
+			#else
 			unsafe
 			{
-				var ptr = _animationTree.Ptr;
-				EMAnimationKeyframeStructLayout keyframe = *(EMAnimationKeyframeStructLayout*)((byte*)ptr.ToPointer() + _keyframesEnumerator.Current.EntryPosition);
+				var ptr = (byte*)_animationTree.Ptr.ToPointer();
+				var displayTreePtr = (byte*)_object.Tree.Ptr.ToPointer();
+				EMAnimationKeyframeStructLayout* keyframe = (EMAnimationKeyframeStructLayout*)(ptr + _keyframesEnumerator.Current.EntryPosition);
 				
-				while(!_keyframesEnumerator.Done && _time >= keyframe.Time)
+				while(!_keyframesEnumerator.Done && _time >= keyframe->Time)
 				{
-					EMAnimationKeyframeValueStructLayout* keyframeValues = (EMAnimationKeyframeValueStructLayout*)((byte*)ptr.ToPointer() + _keyframesEnumerator.Current.EntryPosition + EMAnimationKeyframe.EMAnimationKeyframeSizeOf);
+					EMAnimationKeyframeValueStructLayout* keyframeValues = (EMAnimationKeyframeValueStructLayout*)((byte*)ptr + _keyframesEnumerator.Current.EntryPosition + EMAnimationKeyframe.EMAnimationKeyframeSizeOf);
 					var count = (_keyframesEnumerator.Current.EntrySizeOf - EMAnimationKeyframe.EMAnimationKeyframeSizeOf)/EMAnimationKeyframeValue.EMAnimationKeyframeValueSizeOf;
-			
+					
 					for(var i = 0; i < count; i++)
 					{
-						EMAnimationKeyframeValueStructLayout keyframeValue = keyframeValues[i];
-						CoreAssert.Fatal(0 <= keyframeValue.ChildIndex && keyframeValue.ChildIndex < _positions.Count);
-						
-						_entry.Position = _positions[keyframeValue.ChildIndex];
-						_entry.Affect((TSPropertyType)keyframeValue.PropertyType, keyframeValue.Offset, keyframeValue.Value);
+						EMAnimationKeyframeValueStructLayout* keyframeValue = keyframeValues + i;
+						CoreAssert.Fatal(0 <= keyframeValue->ChildIndex && keyframeValue->ChildIndex < _positions.Count);
+
+						var currentPtr = displayTreePtr + _positions[keyframeValue->ChildIndex] + keyframeValue->Offset + TSTreeStreamTag.TSTreeStreamTagSizeOf;
+						switch((TSPropertyType)keyframeValue->PropertyType)
+						{
+						case TSPropertyType._byte:*currentPtr = (byte)keyframeValue->Value;break;
+						case TSPropertyType._ushort:*(ushort*)currentPtr = (ushort)keyframeValue->Value;break;
+						case TSPropertyType._int:*(int*)currentPtr = (int)keyframeValue->Value;break;
+						case TSPropertyType._float:*(float*)currentPtr = (float)keyframeValue->Value;break;
+						}
 					}
 					
-					if(!_keyframesEnumerator.MoveNext())
+					if(_keyframesEnumerator.MoveNext())
 					{
-						break;
+						keyframe = (EMAnimationKeyframeStructLayout*)(ptr + _keyframesEnumerator.Current.EntryPosition);
 					}
-					
-					keyframe = *(EMAnimationKeyframeStructLayout*)((byte*)ptr.ToPointer() + _keyframesEnumerator.Current.EntryPosition);
+					else
+					{
+						if(keyframe->Time == 0)
+						{
+							_loop = false;
+						}
+					}
 				}
 			}
-#endif
+			#endif
+
+			if(_xyLinearInterpolation != null)
+			{
+                _childs.Clear();
+                _object.FillChilds(_childs);
+				var t = _time/_animationClip.Length;
+
+                CoreAssert.Fatal(_childs.Count == _xyLinearInterpolation.Count);
+                for(var i = 0; i < _childs.Count; i++)
+				{
+					var vec = _xyLinearInterpolation[i].Lerp(t);
+                    _childs[i].Transform.M02 = vec.x;
+                    _childs[i].Transform.M12 = vec.y;
+				}
+			}
 		}
+
 #if UNITY_EDITOR
+
         public void OnInspectorGUI()
         {
             if(_object != null)
             {
                 var path = string.Empty;
-                if(_object.GetPath(out path))
-                {
-                    UnityEditor.EditorGUILayout.LabelField("Path: " + path);
-                }
-                
-                _loop = UnityEditor.EditorGUILayout.Toggle("Loop: ", _loop);
-                
-                if(!_loop && GUILayout.Button("Play once"))
-                {
-                    GotoAndPlay(_label, false);
-                }
-                    
-                if(_animationTree != null)
-                {
-                    var clipEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
-                    clipEnumerator.Init(_animationTree.RootTag);
-                    
-                    var labels = new List<string>();
-                    while(clipEnumerator.MoveNext())
-                    {
-                        labels.Add(_animationTree.GetName(clipEnumerator.Current));
-                    }
-                    
-                    if(labels.Count > 0)
-                    {
-                        var oldIndex = labels.IndexOf(_label);
-                        var newIndex = UnityEditor.EditorGUILayout.Popup(oldIndex == -1 ? 0 : oldIndex, labels.ToArray());
-                        if(oldIndex != newIndex)
-                        {
-                            GotoAndPlay(labels[newIndex]);
-                        }
-                    }
-                }
+				if(_object.GetPath(out path) && !string.IsNullOrEmpty(path))
+				{
+					UnityEditor.EditorGUILayout.LabelField("Path: " + path);
+					var time = _time;
+					time = UnityEditor.EditorGUILayout.FloatField("Time: ", time);
+					
+					_speed = UnityEditor.EditorGUILayout.FloatField("Speed: ", _speed);
+					_loop = UnityEditor.EditorGUILayout.Toggle("Loop: ", _loop);
+					
+					if(!_loop && GUILayout.Button("Play once"))
+					{
+						GotoAndPlay(_label, false);
+					}
+					
+					if(_time != time)
+					{
+						_time = time;
+						GotoAndPlay(Label, _time, _loop);
+					}
+					
+					if(_animationTree != null)
+					{
+						var clipEnumerator = new TSTreeStreamSiblingEnumerator(_animationTree);
+						clipEnumerator.Init(_animationTree.RootTag);
+						
+						var labels = new List<string>();
+						while(clipEnumerator.MoveNext())
+						{
+							labels.Add(_animationTree.GetName(clipEnumerator.Current));
+						}
+						
+						if(labels.Count > 0)
+						{
+							var oldIndex = labels.IndexOf(_label);
+							var newIndex = UnityEditor.EditorGUILayout.Popup(oldIndex == -1 ? 0 : oldIndex, labels.ToArray());
+							if(oldIndex != newIndex)
+							{
+								GotoAndPlay(labels[newIndex]);
+							}
+						}
+					}
+				}
             }
         }
 #endif
@@ -292,5 +364,45 @@ namespace LLT
                 _speed = value;
             }
         }
+
+		public void ConvertXYToLinearInterpolation()
+		{
+			var childs = _object.Childs;
+			var xyLinearInterpolation = new List<EMXYLinearInterpolation>(childs.Count);
+			var oldTime = Time;
+
+			Time = 0;
+			Seek();
+
+			for(var i = 0; i < childs.Count; i++)
+			{
+				xyLinearInterpolation.Add(new EMXYLinearInterpolation(){XStart = childs[i].Transform.M02, YStart = childs[i].Transform.M12});
+			}
+
+			Time = _animationClip.Length;
+			Seek();
+
+			for(var i = 0; i < childs.Count; i++)
+			{
+				xyLinearInterpolation[i].XEnd = childs[i].Transform.M02;
+				xyLinearInterpolation[i].YEnd = childs[i].Transform.M12;
+			}
+
+			Time = oldTime;
+			Seek();
+
+			_xyLinearInterpolation = xyLinearInterpolation;
+		}
+
+		public Vector2 LerpXY(EMObject child, float t)
+		{
+			CoreAssert.Fatal(_xyLinearInterpolation != null, "Need to call ConvertXYToLinearInterpolation() first.");
+
+			var childs = _object.Childs;
+			var indexOf = childs.IndexOf(child);
+
+			CoreAssert.Fatal(indexOf != -1);
+			return _xyLinearInterpolation[indexOf].Lerp(t);
+		}
 	}
 }

@@ -5,6 +5,34 @@
 	    private EMSwfRect _bounds;
 	    private byte[] _content;
 	
+		private float _scaleX = 0f;
+		public float ScaleX
+		{
+			get
+			{
+				return _scaleX;
+			}
+			set
+			{
+				_scaleX = System.Math.Max(_scaleX, System.Math.Abs(value));
+			}
+		}
+
+		private float _scaleY = 0f;
+		public float ScaleY
+		{
+			get
+			{
+				return _scaleY;
+			}
+			set
+			{
+				_scaleY = System.Math.Max(_scaleY, System.Math.Abs(value));
+			}
+		}
+	
+		public bool Used { get; set; }
+
 	    public EMSwfRect Bounds
 	    {
 	        get

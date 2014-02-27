@@ -6,6 +6,13 @@ namespace LLT
 {
 	public sealed class EMSwfSettings
 	{
+		public int Dpi { get; private set; }
+
+		private EMSwfSettings()
+		{
+			Dpi = 72;
+		}
+
 		public static EMSwfSettings Get(string swfPath)
 		{
 			var xmlPath = Path.ChangeExtension(swfPath, ".xml");

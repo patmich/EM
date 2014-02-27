@@ -229,7 +229,7 @@ namespace LLT
 	
 	    #region ICoreTreeNode implementation
 		
-		public void Expand()
+		public void Expand(float scaleX, float scaleY)
 		{
 			var childs = new Dictionary<ChildKey, ITSTreeNode>();
 	        var currentFrame = 0;
@@ -260,12 +260,16 @@ namespace LLT
 	                    {
 							if(!childs.ContainsKey(key))
 							{
-								childs.Add(key, new EMSwfDefineSpriteNode(key.Name, currentFrame == 0, placeObject2.Depth ,placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, defineSprite));
+								childs.Add(key, new EMSwfDefineSpriteNode(key.Name, currentFrame == 0, placeObject2.Depth ,placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, defineSprite, scaleX, scaleY));
 							}
 	                    }
 						var defineShape = _importer.GetObject<EMSwfDefineShape>((ushort)placeObject2.RefId);
 	                    if (defineShape != null)
 	                    {
+							defineShape.ScaleX = scaleX;
+							defineShape.ScaleY = scaleY;
+							defineShape.Used = true;
+
 							if(!childs.ContainsKey(key))
 							{
 								childs.Add(key, new EMSwfDefineShapeNode(key.Name, currentFrame == 0, placeObject2.Depth, placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, defineShape));

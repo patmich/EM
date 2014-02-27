@@ -87,7 +87,6 @@ public sealed class EMSwfBinaryWriter : BinaryWriter
             _stream.SetBit(position + i, (low & (1 << 15 - i)) > 0);
         }
     }
-
     public void Align(bool start)
     {
         if (start)
@@ -96,8 +95,8 @@ public sealed class EMSwfBinaryWriter : BinaryWriter
         }
         else
         {
-            _stream.Position = (int)Math.Ceiling(_position / 8f);
-            _position = 0;
+			_stream.Position = _position / 8 + ((_position % 8 == 0) ? 0 : 1);
+			_position = 0;
         }
     }
 }

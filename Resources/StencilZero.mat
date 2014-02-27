@@ -6,9 +6,10 @@ Material:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: StencilFullClearZero
-  m_Shader: {fileID: 4800000, guid: 3c36b1ac9701c4361a1acbc40865373c, type: 3}
+  m_Name: StencilZero
+  m_Shader: {fileID: 4800000, guid: e56d6137bf10e4507ad9b119016ce394, type: 3}
   m_ShaderKeywords: []
+  m_CustomRenderQueue: -1
   m_SavedProperties:
     serializedVersion: 2
     m_TexEnvs:

@@ -21,12 +21,6 @@ namespace LLT
                 comp.InitSerializedComponent(this);
             }
 		}
-		
-        public List<KeyValuePair<ITSTreeNode, int>> InitFromTree(EMRoot root, ITSTreeNode rootNode, ICoreStreamable meta, TSFactory factory)
-        {
-            Root = root;
-            return InitFromTree(rootNode, meta, factory);
-        }
 
 		public override ITSTreeStreamDFSEnumerator Iter
 		{

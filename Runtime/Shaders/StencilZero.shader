@@ -1,9 +1,8 @@
-﻿Shader "LLT/StencilDecrement" 
+﻿Shader "LLT/StencilZero" 
 {
 	Properties 
 	{
 	    _Color ("Main Color", Color) = (0,1,0,1)
-	    _Ref ("Ref", Float) = 0
 	}
 	SubShader 
 	{ 
@@ -15,11 +14,8 @@
 		
 		Stencil 
 		{
-			Ref [_Ref]
-			CompFront equal
-			CompBack equal
-			PassFront DecrSat
-			PassBack DecrSat
+			PassFront Zero
+			PassBack Zero
 		}
 
 	    Pass
