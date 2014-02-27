@@ -76,7 +76,7 @@ namespace LLT
 			}
 		}
 
-		public byte[] ToBytes ()
+		public byte[] ToBytes (List<string> lookup)
 		{
 			return new byte[]{};
 		}

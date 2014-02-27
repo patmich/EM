@@ -23,7 +23,6 @@ namespace LLT
 			_cxForm = cxForm;
 			_clipDepth = clipDepth;
 	        _defineSprite = defineSprite;
-			_defineSprite.Expand();
 		}
 	
 	    public System.Collections.Generic.List<ITSTreeNode> Childs
@@ -70,7 +69,7 @@ namespace LLT
 			}
 		}
 	
-		public byte[] ToBytes ()
+		public byte[] ToBytes (List<string> lookup)
 		{
 			var sprite = new EMSpriteStructLayout();
 			sprite.Transform = new EMTransformStructLayout();

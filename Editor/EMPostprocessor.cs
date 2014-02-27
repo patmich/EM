@@ -14,6 +14,27 @@ namespace LLT
 	public sealed class EMPostprocessor : AssetPostprocessor
 	{
 		private static Dictionary<string, IEnumerator> _importers;
+		private static Dictionary<string, IEnumerator> Importers
+		{
+			get
+			{
+				if(_importers == null)
+				{
+					_importers = new Dictionary<string, IEnumerator>();
+					EditorApplication.update += ()=>
+					{
+						foreach(var importer in _importers.ToList())
+						{
+							if(!importer.Value.MoveNext())
+							{
+								_importers.Remove(importer.Key);
+							}
+						}
+					};
+				}
+				return _importers;
+			}
+		}
 
 		[MenuItem("Assets/Import Swf")]
 		public static void ImportSwf()
@@ -43,31 +64,44 @@ namespace LLT
 					return;
 				}
 			}
-			
+
 			CoreTexture2D.PngDecoder = PngDecode;
 			CoreTexture2D.PngEncoder = PngEncode;
-			
-			if(_importers == null)
+
+			foreach(var swf in importedAssets)
 			{
-				_importers = new Dictionary<string, IEnumerator>();
-				EditorApplication.update += ()=>
-				{
-					foreach(var importer in _importers.ToList())
-					{
-						if(!importer.Value.MoveNext())
-						{
-							_importers.Remove(importer.Key);
-						}
-					}
-				};
-			}
-			
-			foreach(var swf in importedAssets.Where(x=>Path.GetExtension(x) == ".swf"))
-			{
-				_importers[swf] = EMSwfImporter.Import(swf, EMSwfSettings.GetDestinationFolder(swf), "Temp/", Path.GetFullPath(EMSettings.Instance.FlexSDK + "/bin/adl"));
+				Importers[swf] = EMSwfImporter.Import(swf, EMSwfSettings.GetDestinationFolder(swf), "Temp/");
 			}
 		}
-		
+
+		[MenuItem("Assets/Import EMFont")]
+		public static void ImportFont()
+		{
+			if(Selection.activeObject == null)
+			{
+				return;
+			}
+			
+			var path = AssetDatabase.GetAssetPath(Selection.activeObject);
+			string[] importedAssets;
+			if(Path.GetExtension(path) == ".emfont")
+			{
+				importedAssets = new string[]{path};
+			}
+			else
+			{
+				importedAssets = Directory.GetFiles(Path.GetDirectoryName(path), "*.emfont", SearchOption.AllDirectories);
+			}
+
+			CoreTexture2D.PngDecoder = PngDecode;
+			CoreTexture2D.PngEncoder = PngEncode;
+
+			foreach(var font in importedAssets)
+			{
+				Importers[font] = EMFontImporter.Import(font, EMSwfSettings.GetDestinationFolder(font), "Temp/");
+			}
+		}
+
 		private static CoreTexture2D PngDecode(string path)
 		{
 			var texture2D = new Texture2D(0,0,TextureFormat.ARGB32, false);

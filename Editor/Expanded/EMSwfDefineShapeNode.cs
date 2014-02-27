@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace LLT
 {
@@ -58,7 +59,7 @@ namespace LLT
 			}
 		}
 	
-		public byte[] ToBytes ()
+		public byte[] ToBytes (List<string> lookup)
 		{
 			var shape = new EMShapeStructLayout();
 			shape.Transform = new EMTransformStructLayout();

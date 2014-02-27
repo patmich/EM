@@ -6,6 +6,7 @@ namespace LLT
 		{
 			EMSprite,
 			EMShape,
+			EMText,
 			EMAnimation,
 			EMAnimationClip,
 			EMAnimationKeyframe,
@@ -16,6 +17,7 @@ namespace LLT
 		{
 			typeof(EMSprite),
 			typeof(EMShape),
+			typeof(EMText),
 			typeof(EMAnimation),
 			typeof(EMAnimationClip),
 			typeof(EMAnimationKeyframe),

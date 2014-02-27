@@ -57,7 +57,7 @@ namespace LLT
 			}
 		}
 
-		public byte[] ToBytes ()
+		public byte[] ToBytes (List<string> lookup)
 		{
 			var EMAnimationClip = new EMAnimationClipStructLayout();
 			EMAnimationClip.Length = Length / _frameRate;

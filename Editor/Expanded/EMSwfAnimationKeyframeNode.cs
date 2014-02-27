@@ -57,7 +57,7 @@ namespace LLT
 			}
 		}
 
-		public byte[] ToBytes ()
+		public byte[] ToBytes (List<string> lookup)
 		{
 			var animationKeyframe = new EMAnimationKeyframeStructLayout();
 			animationKeyframe.Time = (Index - _startIndex) / _frameRate;
@@ -71,7 +71,7 @@ namespace LLT
 			var position = EMAnimationKeyframe.EMAnimationKeyframeSizeOf;
 			for(var childIndex = 0; childIndex < _childs.Count; childIndex++)
 			{
-				System.Buffer.BlockCopy(_childs[childIndex].ToBytes(), 0, bytes, position, EMAnimationKeyframeValue.EMAnimationKeyframeValueSizeOf);
+				System.Buffer.BlockCopy(_childs[childIndex].ToBytes(lookup), 0, bytes, position, EMAnimationKeyframeValue.EMAnimationKeyframeValueSizeOf);
 				position += EMAnimationKeyframeValue.EMAnimationKeyframeValueSizeOf;
 			}
 

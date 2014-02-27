@@ -8,6 +8,7 @@ namespace LLT
 		private EMFactory.Type _currentTypeIndex;
 		private readonly EMShape _shape = new EMShape();
 		private readonly EMSprite _sprite = new EMSprite();
+		private readonly EMText _text = new EMText();
 		private readonly EMRoot _root;
 
 		public EMSprite Sprite
@@ -48,7 +49,25 @@ namespace LLT
 				return _shape;
 			}
 		}
-
+		public EMText Text
+		{
+			get
+			{
+				if(_link)
+				{
+					return _subEnumerator.Text;
+				}
+				
+				CoreAssert.Fatal((EMFactory.Type)Current.TypeIndex == EMFactory.Type.EMText);
+				
+				var current = Current;
+				if(_text.Position != current.EntryPosition)
+				{
+					_text.Position = current.EntryPosition;
+				}
+				return _text;
+			}
+		}
 		public int Depth
 		{
 			get
@@ -86,6 +105,7 @@ namespace LLT
             _root = root;
             _sprite.Init(tree);
             _shape.Init(tree);
+			_text.Init(tree);
         }
         
 		public EMDisplayTreeStreamDFSEnumerator(EMRoot root) : base(root.DisplayTree)
@@ -93,6 +113,7 @@ namespace LLT
 			_root = root;
 			_sprite.Init(_root.DisplayTree);
 			_shape.Init(_root.DisplayTree);
+			_text.Init(_root.DisplayTree);
 		}
 		
 		public override bool MoveNext (bool skipSubTree)
@@ -110,6 +131,11 @@ namespace LLT
 		public bool IsSprite()
 		{
 			return _currentTypeIndex == EMFactory.Type.EMSprite;
+		}
+
+		public bool IsText()
+		{
+			return _currentTypeIndex == EMFactory.Type.EMText;
 		}
 
 		public Texture Texture

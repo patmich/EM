@@ -34,7 +34,7 @@ namespace LLT
 			}
 		}
 		
-		public byte[] ToBytes ()
+		public byte[] ToBytes (List<string> lookup)
 		{
 			var EMAnimationKeyframeValue = new EMAnimationKeyframeValueStructLayout();
 			

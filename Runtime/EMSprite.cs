@@ -20,12 +20,7 @@ namespace LLT
 				return (int)EMFactory.Type.EMSprite;
 			}
 		}
-		
-		internal void InternalAwake()
-		{
-			
-		}
-		
+
 		public IEnumerator Link(EMResource resource)
 		{
             var displayTree = _tree as EMDisplayTreeStream;

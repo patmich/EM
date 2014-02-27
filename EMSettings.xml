@@ -1,4 +1,4 @@
 <EMSettings>
-	<FlexSDKSource>http://download.macromedia.com/pub/flex/sdk/flex_sdk_4.6.zip</FlexSDKSource>
-	<FlexSDK>Tools/flex_sdk_4.6</FlexSDK>
+	<AirSDKSource>http://airdownload.adobe.com/air/mac/download/latest/AIRSDK_Compiler.tbz2</AirSDKSource>
+	<AirSDK>Tools/air_sdk_3.9</AirSDK>
 </EMSettings>

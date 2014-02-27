@@ -17,8 +17,8 @@ namespace LLT
 		
 		private static IEnumerator<string> _depencyCheck;
 		
-		public string FlexSDKSource { get; private set; }
-		public string FlexSDK { get; private set; }
+		public string AirSDKSource { get; private set; }
+		public string AirSDK { get; private set; }
 		
 		public static EMSettings Instance
 		{
@@ -70,9 +70,9 @@ namespace LLT
 		
 		private IEnumerator<string> DependencyCheckInternal()
 		{
-			if(!Directory.Exists(FlexSDK))
+			if(!Directory.Exists(AirSDK))
 			{
-				var www = new WWW(FlexSDKSource);
+				var www = new WWW(AirSDKSource);
 				while(!www.isDone)yield return string.Format("Missing depencies: Downloading flex sdk ({0}%)", www.progress * 100);
 				
 				if(!string.IsNullOrEmpty(www.error))
@@ -88,12 +88,12 @@ namespace LLT
 					{
 						File.WriteAllBytes(tempPath, bytes);
 						
-						Directory.CreateDirectory(FlexSDK);
+						Directory.CreateDirectory(AirSDK);
 						var processStartInfo = new ProcessStartInfo("unzip", tempPath);
 						processStartInfo.UseShellExecute = false;
 						processStartInfo.RedirectStandardError = true;
 						processStartInfo.RedirectStandardOutput = true;
-						processStartInfo.WorkingDirectory = FlexSDK;
+						processStartInfo.WorkingDirectory = AirSDK;
 						
 						using(var process = Process.Start(processStartInfo))
 						{
@@ -120,7 +120,7 @@ namespace LLT
 						using(var stream = new MemoryStream(bytes))
 						{
 							var zipFile = Ionic.Zip.ZipFile.Read(stream);
-							zipFile.ExtractAll(FlexSDK);
+							zipFile.ExtractAll(AirSDK);
 						}
 						
 						bytes = null;
@@ -128,7 +128,7 @@ namespace LLT
 				}
 				while(bytes != null)yield return "Missing depencies: Unziping flex sdk.";
 				
-				if(Directory.Exists(FlexSDK))
+				if(Directory.Exists(AirSDK))
 				{
 					UnityEngine.Debug.LogWarning("Depencies resolved, reimporting all.");
 					foreach(var swf in Directory.GetFiles("Assets", "*.swf", SearchOption.AllDirectories))

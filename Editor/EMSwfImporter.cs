@@ -15,13 +15,12 @@ namespace LLT
 		private string _destinationFolder;
 		private string _destination;
 	    private string _temporaryFolder;
-	    private string _adl;
 	
 	    private readonly List<EMSwfObject> _meta = new List<EMSwfObject>();
 	    private readonly CoreDictionary<ushort, EMSwfObject> _objects = new CoreDictionary<ushort, EMSwfObject>();
 	    private readonly CoreDictionary<string, EMSwfObject> _classes = new CoreDictionary<string, EMSwfObject>();
 		
-	    private EMSwfImporter(string source, string destinationFolder, string temporaryFolder, string adl)
+	    private EMSwfImporter(string source, string destinationFolder, string temporaryFolder)
 	    {
 	        _source = source;
 			_destinationFolder = destinationFolder;
@@ -37,18 +36,18 @@ namespace LLT
 	                Directory.Delete(_temporaryFolder, true);
 	            }
 	        }
-	
-	        _adl = adl;
 	    }
 	
-	    public static IEnumerator Import(string source, string destination, string temporaryFolder, string adl)
+	    public static IEnumerator Import(string source, string destination, string temporaryFolder)
 	    {
-	        var importer = new EMSwfImporter(source, destination, temporaryFolder, adl);
+	        var importer = new EMSwfImporter(source, destination, temporaryFolder);
 	        return importer.ImportInternal();
 	    }
 	
 	    private IEnumerator ImportInternal()
 	    {
+			ResolveComponents();
+
 			EMSwfHeader header = null;
 	        foreach (System.Object obj in EMSwfFileReader.Open(this, _source))
 	        {
@@ -82,14 +81,25 @@ namespace LLT
 		            }
 				}
 	        }
-			
 
 			Raster();
-			
+
+			foreach (var sprite in GetObjects<EMSwfDefineSprite>())
+			{
+				var className = _classes.Where(x=>x.Value.Id == sprite.Id).Select(x=>x.Key).FirstOrDefault();
+				if(!string.IsNullOrEmpty(className))
+				{
+					sprite.Expand(new EMSwfComponents(string.Format("{0}/{1}.xml", _temporaryFolder, className)));
+				}
+				else
+				{
+					sprite.Expand(null);
+				}
+			}
+
 			// Create text asset and wait for reference to exist.
 			foreach (var sprite in GetObjects<EMSwfDefineSprite>())
 			{
-				sprite.Expand();
 				if(sprite.AnimationCurves.Count > 0)
 				{
 					using (var tree = new EMAnimationTreeStream())
@@ -102,6 +112,7 @@ namespace LLT
 					}
 				}
 			}
+
 			UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
 			foreach (var sprite in GetObjects<EMSwfDefineSprite>())
 			{
@@ -221,6 +232,20 @@ namespace LLT
 	        return _objects[id] as T;
 	    }
 	
+		private void ResolveComponents()
+		{
+			var invoke = EMADLInvoke.Invoke("Tools/EMComponentResolver/Bin/EMComponentResolver-app.xml", 
+			                                string.Format(" file:/{0} {1}",
+			              Path.GetFullPath(_source),
+			              Path.GetFullPath(_temporaryFolder)
+			              ));
+			
+			while(invoke.MoveNext())
+			{
+				System.Threading.Thread.Sleep(0);
+			}
+		}
+
 	    private void Raster()
 	    {
 	        var destination = string.Format("{0}/{1}.swf", _temporaryFolder, Path.GetFileNameWithoutExtension(_source));
@@ -286,33 +311,21 @@ namespace LLT
 	
 			var padding = 5;
 		
-	        ProcessStartInfo processStartInfo = new ProcessStartInfo();
-	        processStartInfo.WorkingDirectory = Path.GetFullPath("Tools/Rasterizer/bin-debug/");
-	        processStartInfo.FileName = _adl;
-			processStartInfo.RedirectStandardError = true;
-			processStartInfo.RedirectStandardOutput = true;
-			processStartInfo.UseShellExecute = false;
-	        processStartInfo.Arguments = string.Format("{0} -- file:/{1} {2} {3} {4} {5}",
-	                                                   "Raster-app.xml",
-	                                                   Path.GetFullPath(destination),
-	                                                   Path.GetFullPath(_temporaryFolder),
-	                                                   "72",
-	                                                   padding.ToString(),
-	                                                   "10"
-	                                                   );
+			var invoke = EMADLInvoke.Invoke("Tools/Rasterizer/bin-debug/Raster-app.xml", 
+			                                string.Format(" file:/{0} {1} {2} {3} {4}",
+	                                           Path.GetFullPath(destination),
+	                                           Path.GetFullPath(_temporaryFolder),
+	                                           "72",
+	                                           padding.ToString(),
 
-	        Process process = Process.Start(processStartInfo);
-	        process.WaitForExit();
-			
-			if(process.ExitCode != 0)
+	                                           "10"
+			              ));
+
+			while(invoke.MoveNext())
 			{
-				UnityEngine.Debug.LogError(process.StandardError.ReadToEnd());
+				System.Threading.Thread.Sleep(0);
 			}
-			else
-			{
-				UnityEngine.Debug.Log(process.StandardOutput.ReadToEnd());
-			}
-	
+
 			foreach(var file in Directory.GetFiles(_temporaryFolder, "*.png", SearchOption.AllDirectories).Where(x=>!x.Contains("-info")))
 			{
 				var original = CoreTexture2D.PngDecoder.Invoke(file);

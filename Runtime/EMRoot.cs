@@ -253,6 +253,11 @@ namespace LLT
                 {
                     iter.Sprite.SpriteIndex = spriteCount++;
                 }
+				else if(iter.IsText())
+				{
+					iter.Text.Awake();
+					shapeCount += iter.Text.MaxCharCount;
+				}
 			}
 			
             CoreAssert.Fatal(shapeCount < ushort.MaxValue && spriteCount < ushort.MaxValue);

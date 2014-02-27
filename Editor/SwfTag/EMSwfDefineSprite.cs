@@ -196,7 +196,7 @@ namespace LLT
 	    private EMSwfImporter _importer;
 	    private ushort _frameCount;
 	    private readonly List<EMSwfObject> _controlTags = new List<EMSwfObject>();
-		private List<KeyValuePair<ChildKey, ITSTreeNode>> _childs = new List<KeyValuePair<ChildKey, ITSTreeNode>>();
+		private List<KeyValuePair<ChildKey, ITSTreeNode>> _childs;
 		private List<KeyValuePair<EMSwfCurveKey, EMSwfAnimationCurve>> _animationCurves;
 		
 		public List<EMSwfObject> ControlTags
@@ -229,11 +229,16 @@ namespace LLT
 	
 	    #region ICoreTreeNode implementation
 		
-		public void Expand()
+		public void Expand(EMSwfComponents components)
 		{
+			if(_childs != null)
+			{
+				return;
+			}
+
 			var childs = new Dictionary<ChildKey, ITSTreeNode>();
 	        var currentFrame = 0;
-	
+
 	        for (var i = 0; i < _controlTags.Count; i++)
 	        {
 	            if (_controlTags[i] is EMSwfShowFrame)
@@ -255,22 +260,36 @@ namespace LLT
 	                    var key = new ChildKey(placeObject2.Depth, placeObject2.ClipDepth, currentFrame, placeObject2.HasName(), placeObject2.Name, placeObject2.RefId);
 	                    CoreAssert.Fatal(!childs.ContainsKey(key));
 
-	                    var defineSprite = _importer.GetObject<EMSwfDefineSprite>((ushort)placeObject2.RefId);
-	                    if (defineSprite != null)
-	                    {
+						EMSwfText text = null;
+						if(components != null && components.TryGetSwfText(placeObject2.Name, out text))
+						{
 							if(!childs.ContainsKey(key))
 							{
-								childs.Add(key, new EMSwfDefineSpriteNode(key.Name, currentFrame == 0, placeObject2.Depth ,placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, defineSprite));
+								childs.Add(key, new EMSwfTextNode(key.Name, currentFrame == 0, placeObject2.Depth ,placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, text));
 							}
-	                    }
-						var defineShape = _importer.GetObject<EMSwfDefineShape>((ushort)placeObject2.RefId);
-	                    if (defineShape != null)
-	                    {
-							if(!childs.ContainsKey(key))
+						}
+						else
+						{
+		                    var defineSprite = _importer.GetObject<EMSwfDefineSprite>((ushort)placeObject2.RefId);
+		                    if (defineSprite != null)
+		                    {
+								if(!childs.ContainsKey(key))
+								{
+									childs.Add(key, new EMSwfDefineSpriteNode(key.Name, currentFrame == 0, placeObject2.Depth ,placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, defineSprite));
+								}
+		                    }
+							else
 							{
-								childs.Add(key, new EMSwfDefineShapeNode(key.Name, currentFrame == 0, placeObject2.Depth, placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, defineShape));
+								var defineShape = _importer.GetObject<EMSwfDefineShape>((ushort)placeObject2.RefId);
+			                    if (defineShape != null)
+			                    {
+									if(!childs.ContainsKey(key))
+									{
+										childs.Add(key, new EMSwfDefineShapeNode(key.Name, currentFrame == 0, placeObject2.Depth, placeObject2.Matrix, placeObject2.CXform, placeObject2.ClipDepth, defineShape));
+									}
+			                    }
 							}
-	                    }
+						}
 	                }
 	            }       
 				else if(_controlTags[i] is EMSwfRemoveObject2)

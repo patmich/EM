@@ -19,6 +19,7 @@ namespace LLT
 			GenerateCode(typeof(EMAnimationKeyframe));
 			GenerateCode(typeof(EMAnimationKeyframeValue));
 			GenerateCode(typeof(EMRect));
+			GenerateCode(typeof(EMText));
 		}
 				
 		private static void GenerateCode(Type type)
