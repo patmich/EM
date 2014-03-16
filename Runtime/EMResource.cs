@@ -9,9 +9,9 @@ namespace LLT
 		[SerializeField]
 		private GameObject _prefab;
 		private GameObject _instance;
-        private EMRoot _root;
+        private EMNewRoot _root;
         
-        public EMRoot Root
+		public EMNewRoot Root
         {
             get
             {
@@ -29,7 +29,7 @@ namespace LLT
 			_instance.transform.localScale = Vector3.one;
 			_instance.layer = gameObject.layer;
 
-            _root = _instance.GetComponent<EMRoot>();
+            _root = _instance.GetComponent<EMNewRoot>();
 		}
         
         public static EMResource Load(string path)

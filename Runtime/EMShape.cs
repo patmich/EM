@@ -6,10 +6,10 @@ namespace LLT
 	[TSLayout(typeof(EMTransform), "LocalToWorld", 1)]
 	[TSLayout(typeof(EMRect), "Rect", 2)]
 	[TSLayout(typeof(EMRect), "Uv", 3)]
-	[TSLayout(typeof(ushort), "Depth", 4)]
-	[TSLayout(typeof(ushort), "ClipDepth", 5)]
-    [TSLayout(typeof(ushort), "ShapeIndex", 6)]
-    [TSLayout(typeof(ushort), "DrawcallIndex", 7)]
+	[TSLayout(typeof(int), "Depth", 4)]
+	[TSLayout(typeof(int), "ClipDepth", 5)]
+	[TSLayout(typeof(int), "ShapeIndex", 6)]
+	[TSLayout(typeof(int), "DrawcallIndex", 7)]
 	[TSLayout(typeof(byte), "TextureIndex", 8)]
 	[TSLayout(typeof(byte), "UpdateFlag", 9)]
 	public sealed partial class EMShape : TSTreeStreamEntry
@@ -51,7 +51,7 @@ namespace LLT
 #else
 				unsafe
 				{
-					EMShapeStructLayout* ptr = (EMShapeStructLayout*)((byte*)_tree.Ptr.ToPointer() + _position);
+					EMShapeStructLayout* ptr = (EMShapeStructLayout*)((byte*)_textAsset.AddrOfPinnedObject() + _position);
 					
 					if(ptr->LocalToWorld.Placed == 0)
 					{

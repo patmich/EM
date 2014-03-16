@@ -96,17 +96,12 @@ namespace LLT
 			{
 				if(sprite.AnimationCurves.Count > 0)
 				{
-					using (var tree = new EMAnimationTreeStream())
-		            {
-						byte[] buffer;
-						List<KeyValuePair<ITSTreeNode, int>> positions;
+					byte[] buffer;
+					List<KeyValuePair<ITSTreeNode, int>> positions;
 
-						TSTreeStreamBuilder.Build(new EMSwfAnimation(header.FrameRate, sprite), null, new EMFactory(), out buffer, out positions);
+					TSTreeStreamBuilder.Build(new EMSwfAnimation(header.FrameRate, sprite), null, new EMFactory(), out buffer, out positions);
 
-						var animationHeadData = ScriptableObject.CreateInstance<EMAnimationHeadData>();
-						animationHeadData.Bytes = tree.GetAllBytes();
-						UnityEditor.AssetDatabase.CreateAsset(animationHeadData, _destinationFolder + sprite.Id + ".anim.asset");
-					}
+					File.WriteAllBytes(_destinationFolder + sprite.Id + ".anim.bytes", buffer);
 				}
 			}
 			UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
@@ -114,7 +109,7 @@ namespace LLT
 			{
 				if(sprite.AnimationCurves.Count > 0)
 				{
-					var wait = WaitAsset(_destinationFolder + sprite.Id + ".anim.asset");
+					var wait = WaitAsset<TextAsset>(_destinationFolder + sprite.Id + ".anim.bytes");
 					while(wait.MoveNext())yield return null;
 				}
 			}
@@ -129,84 +124,98 @@ namespace LLT
 					prefab = UnityEditor.PrefabUtility.CreatePrefab(prefabPath, temp) as GameObject;
 					GameObject.DestroyImmediate(temp);
 				}
-				else
-				{
-					foreach(var comp in prefab.GetComponents<MonoBehaviour>().Where(x=>x is EMAnimationHead))
-					{
-						MonoBehaviour.DestroyImmediate(comp, true);
-					}
-				}
 
 				var defineSprite = root.Value as EMSwfDefineSprite;
 
 				if(defineSprite != null)
 				{
-					using (var tree = new EMDisplayTreeStream())
-		            {
-						var rootComponent = prefab.GetComponent<EMRoot>();
-						if(rootComponent == null)
-						{
-							rootComponent = prefab.AddComponent<EMRoot>();
-						}
-						rootComponent.enabled = false;
+					var rootComponent = prefab.GetComponent<EMNewRoot>();
+					if(rootComponent == null)
+					{
+						rootComponent = prefab.AddComponent<EMNewRoot>();
+					}
+					rootComponent.enabled = false;
 
-						byte[] buffer;
-						List<KeyValuePair<ITSTreeNode, int>> positions;
+					byte[] buffer;
+					List<KeyValuePair<ITSTreeNode, int>> positions;
+					
+					TSTreeStreamBuilder.Build(new EMSwfDefineSpriteNode(root.Key, true, 0, EMSwfMatrix.Identity, EMSwfColorTransform.Identity, 0, defineSprite, 1f, 1f), null, new EMFactory(), out buffer, out positions);
 
-						TSTreeStreamBuilder.Build(new EMSwfDefineSpriteNode(root.Key, true, 0, EMSwfMatrix.Identity, EMSwfColorTransform.Identity, 0, defineSprite, 1f, 1f), null, new EMFactory(), out buffer, out positions);
+					var rootTextAssetPath = _destinationFolder + root.Key + ".bytes";
+					File.WriteAllBytes(rootTextAssetPath, buffer);
 
-						var index = 0;
-						var atlas = string.Empty;
-						var textures = new List<Texture>();
+					var waitRoot = WaitAsset<TextAsset>(rootTextAssetPath);
+					while(waitRoot.MoveNext())yield return null;
 
-						while((atlas = string.Format("{0}atlas{1}.png", _destinationFolder, index++)) != string.Empty && File.Exists(atlas))
-						{
-							var waitAtlas = WaitAsset(atlas);
-							while(waitAtlas.MoveNext())yield return null;
-
-							textures.Add(UnityEditor.AssetDatabase.LoadMainAssetAtPath(atlas) as Texture);
-						}
-
-						var field = typeof(EMRoot).GetField("_textures",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-						field.SetValue(rootComponent, textures.ToArray());
-				
-						field = typeof(EMRoot).GetField("_tree",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-						field.SetValue(rootComponent, tree);
+					var index = 0;
+					var atlas = string.Empty;
+					var textures = new List<Texture2D>();
+					
+					while((atlas = string.Format("{0}atlas{1}.png", _destinationFolder, index++)) != string.Empty && File.Exists(atlas))
+					{
+						var waitAtlas = WaitAsset<UnityEngine.Texture2D>(atlas);
+						while(waitAtlas.MoveNext())yield return null;
 						
+						textures.Add(waitAtlas.Current);
+					}
+					
+					var field = typeof(EMNewRoot).GetField("_textures",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+					field.SetValue(rootComponent, textures.ToArray());
+
+					var textAsset = new EMDisplayTreeTextAsset() as EMTextAsset;
+
+					field = typeof(EMTextAsset).GetField("_textAsset",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+					field.SetValue(textAsset, waitRoot.Current);
+
+					using (var tree = new EMDisplayTreeStream(rootComponent, textAsset, new List<EMObject>()))
+		            {
+						var objects = new List<EMObject>();
 						for(var i = 0; i < positions.Count; i++)
 						{
 							var spriteNode = positions[i].Key as EMSwfDefineSpriteNode;
 							if(spriteNode != null && GetObject<EMSwfDefineSprite>((ushort)spriteNode.Id).AnimationCurves.Count > 0)
 							{
-								var obj = new EMObject();//tree.GetObject(tree.CreateTag(positions[i].Value));
+								var obj = new EMObject(); //tree.GetObject() as EMObject;
+
+								var tag = tree.CreateTag(positions[i].Value);
+								tag.ObjectIndex = (ushort)objects.Count;
+
 								obj.Position = positions[i].Value;
 								obj.Init(tree);
 
-								var animationHeadData = UnityEditor.AssetDatabase.LoadMainAssetAtPath(_destinationFolder + spriteNode.Id + ".anim.asset");
+								var waitAnim = WaitAsset<TextAsset>(_destinationFolder + spriteNode.Id + ".anim.bytes");
+								while(waitAnim.MoveNext())yield return null;
 
-								var animationHead = obj.AddComponent<EMAnimationHead>();
-								animationHead.hideFlags = HideFlags.HideInInspector;
+								textAsset = new EMAnimationTreeTextAsset() as EMTextAsset;
+								field = typeof(EMTextAsset).GetField("_textAsset",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+								field.SetValue(textAsset, waitAnim.Current);
 
-								field = typeof(EMAnimationHead).GetField("_data", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-								field.SetValue(animationHead, animationHeadData);
+								var animationHead = new EMAnimationHead();
+								field = typeof(EMAnimationHead).GetField("_textAsset", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+								field.SetValue(animationHead, textAsset);
 								
 								field = typeof(EMObject).GetField("_animationHead", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 								field.SetValue(obj, animationHead);
 
-								animationHead.enabled = false;
+								objects.Add(obj);
 							}
 						}
+
+						field = typeof(EMNewRoot).GetField("_objects",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+						field.SetValue(rootComponent, objects);
+
+						UnityEditor.AssetDatabase.DeleteAsset(rootTextAssetPath);
+						File.WriteAllBytes(rootTextAssetPath, tree.TextAsset.Bytes);
+
+						waitRoot = WaitAsset<TextAsset>(rootTextAssetPath);
+						while(waitRoot.MoveNext())yield return null;
 						
-						var rootTextAssetPath = _destinationFolder + root.Key + ".bytes";
-						tree.WriteAllBytes(rootTextAssetPath);
+						textAsset = new EMDisplayTreeTextAsset() as EMTextAsset;
+						field = typeof(EMTextAsset).GetField("_textAsset",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+						field.SetValue(textAsset, waitRoot.Current);
 						
-						UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
-						
-						var wait = WaitAsset(rootTextAssetPath);
-						while(wait.MoveNext())yield return null;
-						
-						field = typeof(EMRoot).GetField("_bytes",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-						field.SetValue(rootComponent, UnityEditor.AssetDatabase.LoadMainAssetAtPath(rootTextAssetPath) as TextAsset);
+						field = typeof(EMNewRoot).GetField("_bufferObject",  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+						field.SetValue(rootComponent, textAsset);
 					}	
 				}
 			}
@@ -344,6 +353,8 @@ namespace LLT
 				}
 
 				original.Save(file);
+
+				UnityEditor.EditorUtility.UnloadUnusedAssets();
 			}
 			
 			var textures = Directory.GetFiles(_temporaryFolder, "*.png", SearchOption.AllDirectories)
@@ -413,8 +424,11 @@ namespace LLT
 						}
 					}
 				}
-		        atlas.Save(string.Format("{0}/atlas{1}.png", _destinationFolder, textureIndex));
-				
+		        
+				atlas.Save(string.Format("{0}/atlas{1}.png", _destinationFolder, textureIndex));
+				atlas = null;
+				UnityEditor.EditorUtility.UnloadUnusedAssets();
+
 				for(var i = 0; i < uv.Length; i++)
 				{
 					if(uv[i] != null)
@@ -434,12 +448,15 @@ namespace LLT
 			}
 	    }
 		
-		private IEnumerator WaitAsset(string path)
+		private IEnumerator<T> WaitAsset<T>(string path)
+			where T : UnityEngine.Object
 		{
-			while(UnityEditor.AssetDatabase.LoadMainAssetAtPath(path) == null)
+			while(UnityEditor.AssetDatabase.LoadAssetAtPath(path, typeof(T)) == null)
 			{
+				UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
 				yield return null;
 			}
+			yield return UnityEditor.AssetDatabase.LoadAssetAtPath(path, typeof(T)) as T;
 		}
 	}
 }

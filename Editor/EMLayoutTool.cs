@@ -13,7 +13,6 @@ namespace LLT
 			GenerateCode(typeof(EMSprite));
 			GenerateCode(typeof(EMShape));
 			GenerateCode(typeof(EMTransform));
-			GenerateCode(typeof(TSTreeStreamTag));
 			GenerateCode(typeof(EMAnimation));
 			GenerateCode(typeof(EMAnimationClip));
 			GenerateCode(typeof(EMAnimationKeyframe));

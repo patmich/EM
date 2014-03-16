@@ -13,50 +13,50 @@ namespace LLT
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 0);
+				return _textAsset.ReadSingle(_position + 0);
 			}
 			set
 			{
-				_tree.Write(_position + 0, value);
+				_textAsset.Write(_position + 0, value);
 			}
 		}
 		public float Y
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 4);
+				return _textAsset.ReadSingle(_position + 4);
 			}
 			set
 			{
-				_tree.Write(_position + 4, value);
+				_textAsset.Write(_position + 4, value);
 			}
 		}
 		public float Width
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 8);
+				return _textAsset.ReadSingle(_position + 8);
 			}
 			set
 			{
-				_tree.Write(_position + 8, value);
+				_textAsset.Write(_position + 8, value);
 			}
 		}
 		public float Height
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 12);
+				return _textAsset.ReadSingle(_position + 12);
 			}
 			set
 			{
-				_tree.Write(_position + 12, value);
+				_textAsset.Write(_position + 12, value);
 			}
 		}
 
-		public override void Init(ITSTreeStream tree)
+		public override void Init(ITSTextAsset textAsset)
 		{
-			_tree = tree;
+			_textAsset = textAsset;
 		}
 
 		public override int SizeOf

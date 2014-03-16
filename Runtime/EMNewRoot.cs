@@ -1,4 +1,71 @@
 using UnityEngine;
+using System.Collections.Generic;
+
+namespace LLT
+{
+	//[ExecuteInEditMode]
+	public sealed class EMNewRoot : MonoBehaviour, IEMRoot
+	{
+		[SerializeField]
+		private MeshFilter _meshFilter;
+
+		[SerializeField]
+		private Texture2D[] _textures;
+
+		[SerializeField]
+		private EMDisplayTreeTextAsset _bufferObject;
+
+		[SerializeField]
+		private List<EMObject> _objects;
+
+		private EMDisplayTreeStream _displayTree;
+		private readonly EMMesh _workerMesh = new EMMesh();
+
+		private void Awake()
+		{
+			_displayTree = new EMDisplayTreeStream(this, _bufferObject, _objects);
+
+			for(var i = 0; i < _textures.Length; i++)
+			{
+				EMAssetManager.Instance.RegisterTexture(_displayTree.TextAsset, i, _textures[i]);
+			}
+
+			_objects = null;
+
+			InitDisplayTree();
+		}
+
+		private void InitDisplayTree()
+		{
+			int spriteCount, shapeCount;
+			EMHelpers.InitDisplayTree(_displayTree.TextAsset.AddrOfPinnedObject(), out spriteCount, out shapeCount);
+			_workerMesh.Init(shapeCount);
+		}
+
+		private void OnDestroy()
+		{
+			for(var i = 0; i < _textures.Length; i++)
+			{
+				EMAssetManager.Instance.UnregisterTexture(_displayTree.TextAsset, i, _textures[i]);
+			}
+
+			_displayTree = null;
+			_bufferObject = null;
+			_textures = null;
+		}
+
+		public EMTransformStructLayout Transform
+		{
+			get
+			{
+				throw new System.NotImplementedException();
+			}
+		}
+	}
+}
+
+/*
+ * using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -785,3 +852,5 @@ namespace LLT
 		}
 	}
 }
+
+*/

@@ -41,82 +41,82 @@ namespace LLT
 		public const int Uv_Width_Offset = 96;
 		public const int Uv_Height_Offset = 100;
 		public const int Depth_Offset = 104;
-		public const int ClipDepth_Offset = 106;
-		public const int DrawcallIndex_Offset = 108;
-		public const int ShapeIndex_Offset = 110;
-		public const int TextureIndex_Offset = 112;
-		public const int UpdateFlag_Offset = 113;
-		public const int EMShapeSizeOf = 116;
+		public const int ClipDepth_Offset = 108;
+		public const int ShapeIndex_Offset = 112;
+		public const int DrawcallIndex_Offset = 116;
+		public const int TextureIndex_Offset = 120;
+		public const int UpdateFlag_Offset = 121;
+		public const int EMShapeSizeOf = 124;
 
 		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
 		public readonly LLT.EMTransform LocalToWorld = new LLT.EMTransform();
 		public readonly LLT.EMRect Rect = new LLT.EMRect();
 		public readonly LLT.EMRect Uv = new LLT.EMRect();
 
-		public ushort Depth
+		public int Depth
 		{
 			get
 			{
-				return _tree.ReadUInt16(_position + 104);
+				return _textAsset.ReadInt32(_position + 104);
 			}
 			set
 			{
-				_tree.Write(_position + 104, value);
+				_textAsset.Write(_position + 104, value);
 			}
 		}
-		public ushort ClipDepth
+		public int ClipDepth
 		{
 			get
 			{
-				return _tree.ReadUInt16(_position + 106);
+				return _textAsset.ReadInt32(_position + 108);
 			}
 			set
 			{
-				_tree.Write(_position + 106, value);
+				_textAsset.Write(_position + 108, value);
 			}
 		}
-		public ushort DrawcallIndex
+		public int ShapeIndex
 		{
 			get
 			{
-				return _tree.ReadUInt16(_position + 108);
+				return _textAsset.ReadInt32(_position + 112);
 			}
 			set
 			{
-				_tree.Write(_position + 108, value);
+				_textAsset.Write(_position + 112, value);
 			}
 		}
-		public ushort ShapeIndex
+		public int DrawcallIndex
 		{
 			get
 			{
-				return _tree.ReadUInt16(_position + 110);
+				return _textAsset.ReadInt32(_position + 116);
 			}
 			set
 			{
-				_tree.Write(_position + 110, value);
+				_textAsset.Write(_position + 116, value);
 			}
 		}
 		public byte TextureIndex
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 112);
+				return _textAsset.ReadByte(_position + 120);
 			}
 			set
 			{
-				_tree.Write(_position + 112, value);
+				_textAsset.Write(_position + 120, value);
 			}
 		}
 		public byte UpdateFlag
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 113);
+				return _textAsset.ReadByte(_position + 121);
 			}
 			set
 			{
-				_tree.Write(_position + 113, value);
+				_textAsset.Write(_position + 121, value);
 			}
 		}
 
@@ -136,20 +136,20 @@ namespace LLT
 			}
 		}
 
-		public override void Init(ITSTreeStream tree)
+		public override void Init(ITSTextAsset textAsset)
 		{
-			_tree = tree;
-			Transform.Init(_tree);
-			LocalToWorld.Init(_tree);
-			Rect.Init(_tree);
-			Uv.Init(_tree);
+			_textAsset = textAsset;
+			Transform.Init(_textAsset);
+			LocalToWorld.Init(_textAsset);
+			Rect.Init(_textAsset);
+			Uv.Init(_textAsset);
 		}
 
 		public override int SizeOf
 		{
 			get
 			{
-				return 116;
+				return 124;
 			}
 		}
 	}

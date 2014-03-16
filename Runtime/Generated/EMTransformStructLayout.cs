@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 namespace LLT
 {
 	[StructLayout(LayoutKind.Explicit, Size=36)]
-	public struct EMTransformStructLayout
+	public partial struct EMTransformStructLayout
 	{
 		[FieldOffset(0)]
 		public float M00;

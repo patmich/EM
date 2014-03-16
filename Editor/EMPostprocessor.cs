@@ -72,7 +72,16 @@ namespace LLT
 		{
 			var texture2D = new Texture2D(0,0,TextureFormat.ARGB32, false);
 			texture2D.LoadImage(File.ReadAllBytes(path));
-			return new CoreTexture2D(texture2D.width, texture2D.height, Array.ConvertAll(texture2D.GetPixels32(), x=>(x.a << 24) + (x.r << 16) + (x.g << 8) + x.b));
+
+			try
+			{
+				return new CoreTexture2D(texture2D.width, texture2D.height, Array.ConvertAll(texture2D.GetPixels32(), x=>(x.a << 24) + (x.r << 16) + (x.g << 8) + x.b));
+			}
+			catch
+			{
+				Debug.Log("das");
+				return null;
+			}
 		}
 		
 		private static void PngEncode(string path, CoreTexture2D coreTexture2D)

@@ -13,24 +13,15 @@ namespace LLT
 		
 		[SerializeField]
 		private EMAnimationHead _animationHead;
-		
-        private readonly List<EMComponent> _components = new List<EMComponent>();
 
 		private EMDisplayTreeStream _tree;
+
 		private TSTreeStreamTag _tag;
 
 		private EMSprite _sprite;
 		private EMShape _shape;
 
         private bool _disposed;
-
-        public EMRoot Root
-        {
-            get
-            {
-                return _tree.Root;
-            }
-        }
 
 		public EMTransform Transform
 		{
@@ -42,7 +33,7 @@ namespace LLT
 					if(_shape == null)
 					{
 						_shape = new EMShape();
-						_shape.Init(_tree);
+						_shape.Init(_tree.TextAsset);
 						_shape.Position = _tag.EntryPosition;
 					}
 
@@ -99,7 +90,7 @@ namespace LLT
 				}
 			}
 		}
-		
+
 		public ITSTreeStream Tree
 		{
 			get
@@ -107,7 +98,7 @@ namespace LLT
 				return _tree;
 			}
 		}
-		
+
 		public TSTreeStreamTag Tag
 		{
 			get
@@ -132,7 +123,7 @@ namespace LLT
 			if((EMFactory.Type)_tag.TypeIndex == EMFactory.Type.EMSprite)
 			{
 				_sprite = new EMSprite();
-				_sprite.Init(_tree);
+				_sprite.Init(_tree.TextAsset);
 				_sprite.Position = _tag.EntryPosition;
 			}
 		}
@@ -140,9 +131,9 @@ namespace LLT
         public bool GetPath(out string path)
         {
             path = string.Empty;
-            if(_tree != null && _tag != null)
+			if(_tree != null && _tag != null)
             {
-                return _tree.RebuildPath(_tag, out path);
+				return _tree.RebuildPath(_tag, out path);
             }
             return false;
         }
@@ -159,20 +150,17 @@ namespace LLT
 		
         public EMObject FindFirstObject(string name)
         {
-            return _tree.FindFirstObject(_tag, name);
+			return _tree.FindFirstObject(_tag, name);
         }
 
-        public List<EMObject> Childs
+        public List<EMObject> GetChilds()
         {
-            get
-            {
-                return _tree.GetChilds(_tag);
-            }
+			return _tree.GetChilds(_tag);
         }
 
         public void FillChilds(List<EMObject> childs)
         {
-            _tree.FillChilds(_tag, childs);
+			_tree.FillChilds(_tag, childs);
         }
 
 		public Bounds Bounds
@@ -219,69 +207,17 @@ namespace LLT
                     retVal.center = new Vector3(iter.Sprite.LocalToWorld.M02, iter.Sprite.LocalToWorld.M12, 0f);
                 }
 
-                var absoluteRoot = AbsoluteRoot;
-                retVal.min = absoluteRoot.transform.localToWorldMatrix.MultiplyPoint(retVal.min);
-                retVal.max = absoluteRoot.transform.localToWorldMatrix.MultiplyPoint(retVal.max);
+                retVal.min = _tree.Transform.MultiplyPoint(retVal.min);
+				retVal.max = _tree.Transform.MultiplyPoint(retVal.max);
 				return retVal;
 			}
 		}
-
-        public T GetComponent<T>() 
-            where T : EMComponent
-        {
-            return _components.Find(x=>x is T) as T;
-        }
-
-        public T AddComponent<T>()
-            where T : EMComponent
-        {
-            var t = _tree.Root.gameObject.AddComponent<T>();
-            _components.Add(t);
-            t.Init(this);
-
-            return t;
-        }
-
-        public void AddSerializedComponent(EMAnimationHead animationHead)
-        {
-            _components.Add(animationHead);
-            _animationHead = animationHead;
-            _animationHead.Init(this);
-        }
-
-        public void AddSerializedComponent(EMComponent component)
-        {
-            _components.Add(component);
-            component.Init(this);
-        }
-
-        public void Destroy(EMComponent t)
-        {
-            _components.Remove(t);
-            GameObject.Destroy(t);
-        }
-
-        public EMRoot AbsoluteRoot 
-        {
-            get
-            {
-                var root = _tree.Root;
-                var parent = _tree.Root.Parent;
-                while(parent != null)
-                {
-                    root = parent.Root;
-                    parent = root.Parent;
-                }
-
-                return root;
-            }
-        }
 
         public string Name
         {
             get
             {
-                return _tree.GetName(_tag);
+				return _tree.GetName(_tag);
             }
         }
 
@@ -289,7 +225,7 @@ namespace LLT
         {
             get
             {
-                var iter = new EMDisplayTreeStreamDFSEnumerator(_tree.Root);
+				var iter = new EMDisplayTreeStreamDFSEnumerator(_tree);
                 iter.Reset(_tag);
                 
                 if(iter.IsShape())
@@ -316,6 +252,7 @@ namespace LLT
 
         public void Dispose()
         {
+			_tree = null;
             _disposed = true;
         }
 

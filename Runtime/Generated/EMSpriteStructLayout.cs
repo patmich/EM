@@ -1,20 +1,20 @@
 using System.Runtime.InteropServices;
 namespace LLT
 {
-	[StructLayout(LayoutKind.Explicit, Size=80)]
+	[StructLayout(LayoutKind.Explicit, Size=88)]
 	public struct EMSpriteStructLayout
 	{
 		[FieldOffset(0)]
 		public LLT.EMTransformStructLayout Transform;
 		[FieldOffset(36)]
 		public LLT.EMTransformStructLayout LocalToWorld;
-		[FieldOffset(69)]
-		public ushort Depth;
 		[FieldOffset(72)]
-		public ushort ClipDepth;
-		[FieldOffset(74)]
-		public ushort SpriteIndex;
+		public int Depth;
 		[FieldOffset(76)]
+		public int ClipDepth;
+		[FieldOffset(80)]
+		public int SpriteIndex;
+		[FieldOffset(84)]
 		public byte UpdateFlag;
 	}
 }

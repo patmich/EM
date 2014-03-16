@@ -4,11 +4,9 @@ namespace LLT
 	{
 		public const int EMAnimationSizeOf = 0;
 
-
-
-		public override void Init(ITSTreeStream tree)
+		public override void Init(ITSTextAsset textAsset)
 		{
-			_tree = tree;
+			_textAsset = textAsset;
 		}
 
 		public override int SizeOf

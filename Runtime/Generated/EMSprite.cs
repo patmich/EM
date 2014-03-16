@@ -33,56 +33,56 @@ namespace LLT
 		public const int LocalToWorld_OB_Offset = 67;
 		public const int LocalToWorld_Placed_Offset = 68;
 		public const int Depth_Offset = 72;
-		public const int ClipDepth_Offset = 74;
-		public const int SpriteIndex_Offset = 76;
-		public const int UpdateFlag_Offset = 78;
-		public const int EMSpriteSizeOf = 80;
+		public const int ClipDepth_Offset = 76;
+		public const int SpriteIndex_Offset = 80;
+		public const int UpdateFlag_Offset = 84;
+		public const int EMSpriteSizeOf = 88;
 
 		public readonly LLT.EMTransform Transform = new LLT.EMTransform();
 		public readonly LLT.EMTransform LocalToWorld = new LLT.EMTransform();
 
-		public ushort Depth
+		public int Depth
 		{
 			get
 			{
-				return _tree.ReadUInt16(_position + 69);
+				return _textAsset.ReadInt32(_position + 72);
 			}
 			set
 			{
-				_tree.Write(_position + 69, value);
+				_textAsset.Write(_position + 72, value);
 			}
 		}
-		public ushort ClipDepth
+		public int ClipDepth
 		{
 			get
 			{
-				return _tree.ReadUInt16(_position + 72);
+				return _textAsset.ReadInt32(_position + 76);
 			}
 			set
 			{
-				_tree.Write(_position + 72, value);
+				_textAsset.Write(_position + 76, value);
 			}
 		}
-		public ushort SpriteIndex
+		public int SpriteIndex
 		{
 			get
 			{
-				return _tree.ReadUInt16(_position + 74);
+				return _textAsset.ReadInt32(_position + 80);
 			}
 			set
 			{
-				_tree.Write(_position + 74, value);
+				_textAsset.Write(_position + 80, value);
 			}
 		}
 		public byte UpdateFlag
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 76);
+				return _textAsset.ReadByte(_position + 84);
 			}
 			set
 			{
-				_tree.Write(_position + 76, value);
+				_textAsset.Write(_position + 84, value);
 			}
 		}
 
@@ -100,18 +100,18 @@ namespace LLT
 			}
 		}
 
-		public override void Init(ITSTreeStream tree)
+		public override void Init(ITSTextAsset textAsset)
 		{
-			_tree = tree;
-			Transform.Init(_tree);
-			LocalToWorld.Init(_tree);
+			_textAsset = textAsset;
+			Transform.Init(_textAsset);
+			LocalToWorld.Init(_textAsset);
 		}
 
 		public override int SizeOf
 		{
 			get
 			{
-				return 80;
+				return 88;
 			}
 		}
 	}

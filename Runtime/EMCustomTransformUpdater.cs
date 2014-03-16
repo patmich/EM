@@ -18,7 +18,6 @@ public static class EMCustomTransformUpdater
 			int index = 0;
 
 			TSTreeStreamTagStructLayout* rootTagPtr = (TSTreeStreamTagStructLayout*)((byte*)ptr.ToPointer() + rootTag);
-			TSTreeStreamTagStructLayout debugRoot = *rootTagPtr;
 
             // ToDo: should be of variable size and shared instance of creating a new one every frame.
             Array.Clear(_tempParentTags, 0, _tempParentTags.Length);

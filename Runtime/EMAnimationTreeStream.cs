@@ -8,7 +8,7 @@ namespace LLT
 	public sealed class EMAnimationTreeStream : TSTreeStream<TSObject>
 	{
 		private EMTreeStreamDFSEnumerator  _iter;
-		
+
 		public override ITSTreeStreamDFSEnumerator Iter
 		{
 			get
@@ -16,10 +16,9 @@ namespace LLT
 				return _iter;
 			}
 		}
-		
-		public void Init(byte[] buffer)
+
+		public EMAnimationTreeStream(ITSTextAsset textAsset) : base(textAsset, null, new List<TSObject>())
 		{
-			InitFromBytes(buffer, null, new EMFactory());
 			_iter = new EMTreeStreamDFSEnumerator(this);
 		}
 	}

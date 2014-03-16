@@ -8,7 +8,7 @@ namespace LLT
 		private EMFactory.Type _currentTypeIndex;
 		private readonly EMShape _shape = new EMShape();
 		private readonly EMSprite _sprite = new EMSprite();
-		private readonly EMRoot _root;
+		private readonly EMDisplayTreeStream _displayTree;
 
 		public EMSprite Sprite
 		{
@@ -29,6 +29,7 @@ namespace LLT
 				return _sprite;
 			}
 		}
+
 		public EMShape Shape
 		{
 			get
@@ -81,19 +82,12 @@ namespace LLT
 			}
 		}
   
-        public EMDisplayTreeStreamDFSEnumerator(EMRoot root, ITSTreeStream tree) : base(tree)
+		public EMDisplayTreeStreamDFSEnumerator(EMDisplayTreeStream displayTree) : base(displayTree)
         {
-            _root = root;
-            _sprite.Init(tree);
-            _shape.Init(tree);
+			_displayTree = displayTree;
+			_sprite.Init(_displayTree.TextAsset);
+			_shape.Init(_displayTree.TextAsset);
         }
-        
-		public EMDisplayTreeStreamDFSEnumerator(EMRoot root) : base(root.DisplayTree)
-		{
-			_root = root;
-			_sprite.Init(_root.DisplayTree);
-			_shape.Init(_root.DisplayTree);
-		}
 		
 		public override bool MoveNext (bool skipSubTree)
 		{
@@ -112,17 +106,16 @@ namespace LLT
 			return _currentTypeIndex == EMFactory.Type.EMSprite;
 		}
 
-		public Texture Texture
+		public int DisplayTreeInstanceId
 		{
 			get
 			{
 				if(_link)
 				{
-					return _subEnumerator.Texture;
+					return _subEnumerator.DisplayTreeInstanceId;
 				}
 
-                CoreAssert.Fatal((EMFactory.Type)Current.TypeIndex == EMFactory.Type.EMShape);
-				return _root.GetTexture(Shape.TextureIndex);
+				return _displayTree.GetInstanceID();
 			}
 		}
 	}

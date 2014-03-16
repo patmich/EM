@@ -1,16 +1,16 @@
 using System.Runtime.InteropServices;
 namespace LLT
 {
-	[StructLayout(LayoutKind.Explicit, Size=8)]
+	[StructLayout(LayoutKind.Explicit, Size=12)]
 	public struct EMAnimationKeyframeValueStructLayout
 	{
 		[FieldOffset(0)]
-		public ushort ChildIndex;
-		[FieldOffset(2)]
-		public byte Offset;
-		[FieldOffset(3)]
-		public byte PropertyType;
+		public int ChildIndex;
 		[FieldOffset(4)]
+		public byte Offset;
+		[FieldOffset(5)]
+		public byte PropertyType;
+		[FieldOffset(8)]
 		public float Value;
 	}
 }

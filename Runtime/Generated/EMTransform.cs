@@ -24,171 +24,171 @@ namespace LLT
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 0);
+				return _textAsset.ReadSingle(_position + 0);
 			}
 			set
 			{
-				_tree.Write(_position + 0, value);
+				_textAsset.Write(_position + 0, value);
 			}
 		}
 		public float M01
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 4);
+				return _textAsset.ReadSingle(_position + 4);
 			}
 			set
 			{
-				_tree.Write(_position + 4, value);
+				_textAsset.Write(_position + 4, value);
 			}
 		}
 		public float M02
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 8);
+				return _textAsset.ReadSingle(_position + 8);
 			}
 			set
 			{
-				_tree.Write(_position + 8, value);
+				_textAsset.Write(_position + 8, value);
 			}
 		}
 		public float M10
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 12);
+				return _textAsset.ReadSingle(_position + 12);
 			}
 			set
 			{
-				_tree.Write(_position + 12, value);
+				_textAsset.Write(_position + 12, value);
 			}
 		}
 		public float M11
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 16);
+				return _textAsset.ReadSingle(_position + 16);
 			}
 			set
 			{
-				_tree.Write(_position + 16, value);
+				_textAsset.Write(_position + 16, value);
 			}
 		}
 		public float M12
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 20);
+				return _textAsset.ReadSingle(_position + 20);
 			}
 			set
 			{
-				_tree.Write(_position + 20, value);
+				_textAsset.Write(_position + 20, value);
 			}
 		}
 		public byte MA
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 24);
+				return _textAsset.ReadByte(_position + 24);
 			}
 			set
 			{
-				_tree.Write(_position + 24, value);
+				_textAsset.Write(_position + 24, value);
 			}
 		}
 		public byte MR
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 25);
+				return _textAsset.ReadByte(_position + 25);
 			}
 			set
 			{
-				_tree.Write(_position + 25, value);
+				_textAsset.Write(_position + 25, value);
 			}
 		}
 		public byte MG
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 26);
+				return _textAsset.ReadByte(_position + 26);
 			}
 			set
 			{
-				_tree.Write(_position + 26, value);
+				_textAsset.Write(_position + 26, value);
 			}
 		}
 		public byte MB
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 27);
+				return _textAsset.ReadByte(_position + 27);
 			}
 			set
 			{
-				_tree.Write(_position + 27, value);
+				_textAsset.Write(_position + 27, value);
 			}
 		}
 		public byte OA
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 28);
+				return _textAsset.ReadByte(_position + 28);
 			}
 			set
 			{
-				_tree.Write(_position + 28, value);
+				_textAsset.Write(_position + 28, value);
 			}
 		}
 		public byte OR
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 29);
+				return _textAsset.ReadByte(_position + 29);
 			}
 			set
 			{
-				_tree.Write(_position + 29, value);
+				_textAsset.Write(_position + 29, value);
 			}
 		}
 		public byte OG
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 30);
+				return _textAsset.ReadByte(_position + 30);
 			}
 			set
 			{
-				_tree.Write(_position + 30, value);
+				_textAsset.Write(_position + 30, value);
 			}
 		}
 		public byte OB
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 31);
+				return _textAsset.ReadByte(_position + 31);
 			}
 			set
 			{
-				_tree.Write(_position + 31, value);
+				_textAsset.Write(_position + 31, value);
 			}
 		}
 		public byte Placed
 		{
 			get
 			{
-				return _tree.ReadByte(_position + 32);
+				return _textAsset.ReadByte(_position + 32);
 			}
 			set
 			{
-				_tree.Write(_position + 32, value);
+				_textAsset.Write(_position + 32, value);
 			}
 		}
 
-		public override void Init(ITSTreeStream tree)
+		public override void Init(ITSTextAsset textAsset)
 		{
-			_tree = tree;
+			_textAsset = textAsset;
 		}
 
 		public override int SizeOf

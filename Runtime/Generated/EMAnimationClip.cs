@@ -5,22 +5,21 @@ namespace LLT
 		public const int Length_Offset = 0;
 		public const int EMAnimationClipSizeOf = 4;
 
-
 		public float Length
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 0);
+				return _textAsset.ReadSingle(_position + 0);
 			}
 			set
 			{
-				_tree.Write(_position + 0, value);
+				_textAsset.Write(_position + 0, value);
 			}
 		}
 
-		public override void Init(ITSTreeStream tree)
+		public override void Init(ITSTextAsset textAsset)
 		{
-			_tree = tree;
+			_textAsset = textAsset;
 		}
 
 		public override int SizeOf

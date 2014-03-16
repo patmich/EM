@@ -10,17 +10,17 @@ namespace LLT
 		{
 			get
 			{
-				return _tree.ReadSingle(_position + 0);
+				return _textAsset.ReadSingle(_position + 0);
 			}
 			set
 			{
-				_tree.Write(_position + 0, value);
+				_textAsset.Write(_position + 0, value);
 			}
 		}
 
-		public override void Init(ITSTreeStream tree)
+		public override void Init(ITSTextAsset textAsset)
 		{
-			_tree = tree;
+			_textAsset = textAsset;
 		}
 
 		public override int SizeOf

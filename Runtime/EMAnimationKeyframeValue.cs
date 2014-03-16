@@ -1,7 +1,7 @@
 namespace LLT
 {
-	[TSLayout(typeof(ushort), "ChildIndex", 0)]
-	[TSLayout(typeof(byte), "Offset", 1)]
+	[TSLayout(typeof(int), "ChildIndex", 0)]
+	[TSLayout(typeof(int), "Offset", 1)]
 	[TSLayout(typeof(byte), "PropertyType", 2)]
 	[TSLayout(typeof(float), "Value", 3)]
 	public sealed partial class EMAnimationKeyframeValue : TSTreeStreamEntry

@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 namespace LLT
 {
-	[StructLayout(LayoutKind.Explicit, Size=116)]
+	[StructLayout(LayoutKind.Explicit, Size=124)]
 	public struct EMShapeStructLayout
 	{
 		[FieldOffset(0)]
@@ -13,16 +13,16 @@ namespace LLT
 		[FieldOffset(88)]
 		public LLT.EMRectStructLayout Uv;
 		[FieldOffset(104)]
-		public ushort Depth;
-		[FieldOffset(106)]
-		public ushort ClipDepth;
+		public int Depth;
 		[FieldOffset(108)]
-		public ushort DrawcallIndex;
-		[FieldOffset(110)]
-		public ushort ShapeIndex;
+		public int ClipDepth;
 		[FieldOffset(112)]
+		public int ShapeIndex;
+		[FieldOffset(116)]
+		public int DrawcallIndex;
+		[FieldOffset(120)]
 		public byte TextureIndex;
-		[FieldOffset(113)]
+		[FieldOffset(121)]
 		public byte UpdateFlag;
 	}
 }
